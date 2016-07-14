@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use super::Color;
 
 pub struct Histogram {
-    data: HashMap<Color, usize>,
+    pub data: HashMap<Color, usize>,
 }
 
 impl Histogram {
