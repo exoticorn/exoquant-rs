@@ -1,0 +1,6 @@
+[package]
+name = "exoquant"
+version = "0.1.0"
+authors = ["Dennis Ranke <dennis.ranke@gmail.com>"]
+
+[dependencies]
