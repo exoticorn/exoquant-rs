@@ -1,7 +1,7 @@
 use std::ops::{Add, AddAssign, Sub, Mul, MulAssign};
 use std::convert::From;
 
-#[derive(Eq,PartialEq,Hash)]
+#[derive(Copy,Clone,Eq,PartialEq,Hash)]
 pub struct Color(pub u32);
 
 impl Color {
@@ -68,6 +68,18 @@ impl Add for FloatColor {
             g: self.g + rhs.g,
             b: self.b + rhs.b,
             a: self.a + rhs.a,
+        }
+    }
+}
+
+impl Add<f64> for FloatColor {
+    type Output = FloatColor;
+    fn add(self, rhs: f64) -> FloatColor {
+        FloatColor {
+            r: self.r + rhs,
+            g: self.g + rhs,
+            b: self.b + rhs,
+            a: self.a + rhs,
         }
     }
 }

@@ -62,11 +62,7 @@ impl QuantizerNode {
 
         dir *= {
             let s = dir.dot(&dir).sqrt();
-            if s < 0.000000001 {
-                1.0
-            } else {
-                1.0 / s
-            }
+            if s < 0.000000001 { 1.0 } else { 1.0 / s }
         };
 
         // Now sort histogram by primary vector
@@ -78,8 +74,7 @@ impl QuantizerNode {
         let mut vdif = -v;
         let mut n2 = 0;
         let mut split = 0usize;
-        let mut i = 0;
-        for entry in &histogram {
+        for (i, entry) in histogram.iter().enumerate() {
             n2 += entry.count;
             sum += entry.color * entry.count as f64;
             sum2 += entry.color * entry.color * entry.count as f64;
@@ -94,8 +89,6 @@ impl QuantizerNode {
                     split = i + 1;
                 }
             }
-
-            i += 1;
         }
 
         QuantizerNode {

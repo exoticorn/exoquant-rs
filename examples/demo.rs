@@ -1,15 +1,17 @@
 extern crate exoquant;
 extern crate lodepng;
 
-use exoquant::Color;
+use exoquant::{Color, Remapper, RemapperOrdered};
 
 fn main() {
     println!("Loading PNG");
     let input = lodepng::decode32_file("test.png").unwrap();
+    let input_image: Vec<_> =
+        input.buffer.as_ref().iter().map(|c| Color::rgba(c.r, c.g, c.b, c.a)).collect();
 
     println!("Building histogram");
     let mut hist = exoquant::Histogram::new();
-    hist.extend(input.buffer.as_ref().iter().map(|c| Color::rgba(c.r, c.g, c.b, c.a)));
+    hist.extend(input_image.iter().map(|c| *c));
 
     println!("Generating palette");
     let palette = exoquant::create_palette(&hist, 256);
@@ -35,12 +37,8 @@ fn main() {
     state.info_raw().colortype = lodepng::ColorType::LCT_PALETTE;
 
     println!("Remapping image to palette");
-    let map = exoquant::colormap::ColorMap::new(&palette);
-    let image: Vec<_> = input.buffer
-        .as_ref()
-        .iter()
-        .map(|c| map.find_nearest(&Color::rgba(c.r, c.g, c.b, c.a)) as u8)
-        .collect();
+    let remapper = RemapperOrdered::new(&palette);
+    let image: Vec<_> = remapper.remap8(&input_image, input.width);
 
     println!("Saving PNG");
     state.encode_file("out.png", &image, input.width, input.height).unwrap();

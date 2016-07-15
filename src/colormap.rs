@@ -3,6 +3,8 @@ use ::color::FloatColor;
 
 pub struct ColorMap {
     kdtree: KDNode,
+    neighbor_distance: Vec<f64>,
+    colors: Vec<FloatColor>,
 }
 
 struct KDNode {
@@ -81,13 +83,17 @@ impl KDNode {
         }
     }
 
-    fn find_nearest(&self, needle: FloatColor, mut limit: f64) -> Option<KDNearest> {
+    fn find_nearest(&self,
+                    needle: FloatColor,
+                    mut limit: f64,
+                    ignore_index: usize)
+                    -> Option<KDNearest> {
         let mut result = None;
 
         let diff = needle - self.mid_point;
         let distance = diff.dot(&diff).sqrt();
 
-        if distance < limit {
+        if distance < limit && self.index != ignore_index {
             limit = distance;
             result = Some(KDNearest {
                 index: self.index,
@@ -98,7 +104,7 @@ impl KDNode {
         let dot = diff.dot(&self.normal);
         if dot <= 0.0 {
             if let Some(ref left) = self.left {
-                if let Some(nearest) = left.find_nearest(needle, limit) {
+                if let Some(nearest) = left.find_nearest(needle, limit, ignore_index) {
                     limit = nearest.distance;
                     result = Some(nearest);
                 }
@@ -106,14 +112,14 @@ impl KDNode {
 
             if -dot < limit {
                 if let Some(ref right) = self.right {
-                    if let Some(nearest) = right.find_nearest(needle, limit) {
+                    if let Some(nearest) = right.find_nearest(needle, limit, ignore_index) {
                         result = Some(nearest);
                     }
                 }
             }
         } else {
             if let Some(ref right) = self.right {
-                if let Some(nearest) = right.find_nearest(needle, limit) {
+                if let Some(nearest) = right.find_nearest(needle, limit, ignore_index) {
                     limit = nearest.distance;
                     result = Some(nearest);
                 }
@@ -121,7 +127,7 @@ impl KDNode {
 
             if dot < limit {
                 if let Some(ref left) = self.left {
-                    if let Some(nearest) = left.find_nearest(needle, limit) {
+                    if let Some(nearest) = left.find_nearest(needle, limit, ignore_index) {
                         result = Some(nearest);
                     }
                 }
@@ -136,15 +142,40 @@ impl ColorMap {
     pub fn new(colors: &[Color]) -> ColorMap {
         let float_colors: Vec<_> = colors.iter().map(|c| c.into()).collect();
         let kdtree = KDNode::new((0..colors.len()).collect(), &float_colors);
-        ColorMap { kdtree: kdtree }
+        let neighbor_distance = float_colors.iter()
+            .enumerate()
+            .map(|(i, c)| {
+                if let Some(nearest) = kdtree.find_nearest(*c, ::std::f64::MAX, i) {
+                    nearest.distance
+                } else {
+                    ::std::f64::MAX
+                }
+            })
+            .collect();
+        ColorMap {
+            kdtree: kdtree,
+            neighbor_distance: neighbor_distance,
+            colors: float_colors,
+        }
     }
 
     pub fn find_nearest(&self, color: &Color) -> usize {
-        let c: FloatColor = color.into();
-        if let Some(nearest) = self.kdtree.find_nearest(c, ::std::f64::MAX) {
+        self.find_nearest_float(color.into())
+    }
+
+    pub fn find_nearest_float(&self, color: FloatColor) -> usize {
+        if let Some(nearest) = self.kdtree.find_nearest(color, ::std::f64::MAX, ::std::usize::MAX) {
             nearest.index
         } else {
             0
         }
+    }
+
+    pub fn neighbor_distance(&self, index: usize) -> f64 {
+        self.neighbor_distance[index]
+    }
+
+    pub fn float_color(&self, index: usize) -> FloatColor {
+        self.colors[index]
     }
 }
