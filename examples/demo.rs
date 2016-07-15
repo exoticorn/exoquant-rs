@@ -4,11 +4,14 @@ extern crate lodepng;
 use exoquant::Color;
 
 fn main() {
+    println!("Loading PNG");
     let input = lodepng::decode32_file("test.png").unwrap();
 
+    println!("Building histogram");
     let mut hist = exoquant::Histogram::new();
     hist.extend(input.buffer.as_ref().iter().map(|c| Color::rgba(c.r, c.g, c.b, c.a)));
 
+    println!("Generating palette");
     let palette = exoquant::create_palette(&hist, 256);
 
     let mut state = lodepng::State::new();
@@ -31,12 +34,15 @@ fn main() {
     state.info_raw().bitdepth = 8;
     state.info_raw().colortype = lodepng::ColorType::LCT_PALETTE;
 
+    println!("Remapping image to palette");
     let map = exoquant::colormap::ColorMap::new(&palette);
     let image: Vec<_> = input.buffer
         .as_ref()
         .iter()
         .map(|c| map.find_nearest(&Color::rgba(c.r, c.g, c.b, c.a)) as u8)
         .collect();
+
+    println!("Saving PNG");
     state.encode_file("out.png", &image, input.width, input.height).unwrap();
     println!("done!");
 }
