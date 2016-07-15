@@ -1,6 +1,7 @@
 mod color;
 mod histogram;
 mod quantizer;
+pub mod colormap;
 
 pub use color::Color;
 pub use histogram::Histogram;

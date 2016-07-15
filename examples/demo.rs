@@ -11,8 +11,32 @@ fn main() {
 
     let palette = exoquant::create_palette(&hist, 256);
 
-    let image: Vec<_> =
-        palette.iter().map(|c| lodepng::RGBA::new(c.r(), c.g(), c.b(), c.a())).collect();
-    lodepng::encode32_file("palette.png", &image, 16, 16).unwrap();
+    let mut state = lodepng::State::new();
+    for color in &palette {
+        unsafe {
+            lodepng::ffi::lodepng_palette_add(&mut state.info_png().color,
+                                              color.r(),
+                                              color.g(),
+                                              color.b(),
+                                              color.a());
+            lodepng::ffi::lodepng_palette_add(&mut state.info_raw(),
+                                              color.r(),
+                                              color.g(),
+                                              color.b(),
+                                              color.a());
+        }
+    }
+    state.info_png().color.bitdepth = 8;
+    state.info_png().color.colortype = lodepng::ColorType::LCT_PALETTE;
+    state.info_raw().bitdepth = 8;
+    state.info_raw().colortype = lodepng::ColorType::LCT_PALETTE;
+
+    let map = exoquant::colormap::ColorMap::new(&palette);
+    let image: Vec<_> = input.buffer
+        .as_ref()
+        .iter()
+        .map(|c| map.find_nearest(&Color::rgba(c.r, c.g, c.b, c.a)) as u8)
+        .collect();
+    state.encode_file("out.png", &image, input.width, input.height).unwrap();
     println!("done!");
 }
