@@ -7,14 +7,15 @@ struct HistColor {
 }
 
 struct QuantizerNode {
-    histogram: Vec<HistColor>,
-    avg: FloatColor,
-    vdif: f64,
-    split: usize,
+    histogram: Vec<HistColor>, // a histogram of the colors represented by this node
+    avg: FloatColor, // the average color of this node
+    vdif: f64, // the improvement to the total variance when splitting this node
+    split: usize, // the best index to split this node at
 }
 
 impl QuantizerNode {
     fn new(mut histogram: Vec<HistColor>) -> QuantizerNode {
+        // First calculate the color average and variance over the histogram
         let mut n = 0usize;
         let mut fsum = FloatColor::default();
         let mut fsum2 = FloatColor::default();
@@ -38,6 +39,7 @@ impl QuantizerNode {
         let vc = fsum2 - fsum * avg;
         let v = vc.r + vc.g + vc.b + vc.a;
 
+        // Next sort histogram by the channel with the largest variance
         if vc.r > vc.g && vc.r > vc.b && vc.r > vc.a {
             histogram.sort_by(|a, b| a.color.r.partial_cmp(&b.color.r).unwrap());
         } else if vc.g > vc.b && vc.g > vc.a {
@@ -48,10 +50,11 @@ impl QuantizerNode {
             histogram.sort_by(|a, b| a.color.a.partial_cmp(&b.color.a).unwrap());
         }
 
+        // Determine primary vector of distribution in the histogram
         let mut dir = FloatColor::default();
         for entry in &histogram {
             let mut tmp = (entry.color - avg) * entry.count as f64;
-            if tmp.dot(&tmp) < 0.0 {
+            if tmp.dot(&dir) < 0.0 {
                 tmp *= -1.0;
             }
             dir += tmp;
@@ -59,11 +62,17 @@ impl QuantizerNode {
 
         dir *= {
             let s = dir.dot(&dir).sqrt();
-            if s < 0.000000001 { 1.0 } else { 1.0 / s }
+            if s < 0.000000001 {
+                1.0
+            } else {
+                1.0 / s
+            }
         };
 
+        // Now sort histogram by primary vector
         histogram.sort_by(|a, b| a.color.dot(&dir).partial_cmp(&b.color.dot(&dir)).unwrap());
 
+        // Find split index that results in lowest total variance
         let mut sum = FloatColor::default();
         let mut sum2 = FloatColor::default();
         let mut vdif = -v;
@@ -82,7 +91,7 @@ impl QuantizerNode {
                 let nv = tmp.r + tmp.g + tmp.b + tmp.a + tmp2.r + tmp2.g + tmp2.b + tmp2.a;
                 if -nv > vdif {
                     vdif = -nv;
-                    split = i;
+                    split = i + 1;
                 }
             }
 
@@ -116,7 +125,7 @@ pub fn create_palette(histogram: &::histogram::Histogram, num_colors: usize) -> 
             let node = {
                 let mut best_i = 0;
                 let mut best_e = 0.0;
-                for i in 1..nodes.len() - 1 {
+                for i in 0..nodes.len() {
                     if nodes[i].vdif >= best_e {
                         best_e = nodes[i].vdif;
                         best_i = i;
