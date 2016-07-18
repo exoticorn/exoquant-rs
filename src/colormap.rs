@@ -141,8 +141,12 @@ impl KDNode {
 impl ColorMap {
     pub fn new(colors: &[Color]) -> ColorMap {
         let float_colors: Vec<_> = colors.iter().map(|c| c.into()).collect();
-        let kdtree = KDNode::new((0..colors.len()).collect(), &float_colors);
-        let neighbor_distance = float_colors.iter()
+        Self::from_float_colors(float_colors)
+    }
+
+    pub fn from_float_colors(colors: Vec<FloatColor>) -> ColorMap {
+        let kdtree = KDNode::new((0..colors.len()).collect(), &colors);
+        let neighbor_distance = colors.iter()
             .enumerate()
             .map(|(i, c)| {
                 if let Some(nearest) = kdtree.find_nearest(*c, ::std::f64::MAX, i) {
@@ -155,7 +159,7 @@ impl ColorMap {
         ColorMap {
             kdtree: kdtree,
             neighbor_distance: neighbor_distance,
-            colors: float_colors,
+            colors: colors,
         }
     }
 

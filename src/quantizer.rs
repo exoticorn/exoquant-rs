@@ -1,9 +1,9 @@
 use ::color::FloatColor;
 use ::color::Color;
 
-struct HistColor {
-    color: FloatColor,
-    count: usize,
+pub struct HistColor {
+    pub color: FloatColor,
+    pub count: usize,
 }
 
 struct QuantizerNode {
@@ -101,15 +101,7 @@ impl QuantizerNode {
 }
 
 pub fn create_palette(histogram: &::histogram::Histogram, num_colors: usize) -> Vec<Color> {
-    let hist: Vec<_> = histogram.data
-        .iter()
-        .map(|(color, count)| {
-            HistColor {
-                color: color.into(),
-                count: *count,
-            }
-        })
-        .collect();
+    let hist: Vec<_> = histogram.to_hist_colors();
 
     let mut nodes = vec![QuantizerNode::new(hist)];
 

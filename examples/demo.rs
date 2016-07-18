@@ -16,6 +16,9 @@ fn main() {
     println!("Generating palette");
     let palette = exoquant::create_palette(&hist, 256);
 
+    println!("Optimize palette (k-means)");
+    let palette = exoquant::optimize_palette(palette, &hist, 4);
+
     let mut state = lodepng::State::new();
     for color in &palette {
         unsafe {
