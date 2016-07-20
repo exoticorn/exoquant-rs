@@ -1,7 +1,7 @@
 extern crate exoquant;
 extern crate lodepng;
 
-use exoquant::{Color, Remapper, RemapperOrdered};
+use exoquant::{Color, Remapper, RemapperOrdered2};
 
 fn main() {
     println!("Loading PNG");
@@ -14,7 +14,7 @@ fn main() {
     hist.extend(input_image.iter().map(|c| *c));
 
     println!("Generating palette");
-    let palette = exoquant::create_palette(&hist, 256);
+    let palette = exoquant::create_palette(&hist, 64);
 
     println!("Optimize palette (k-means)");
     let palette = exoquant::optimize_palette(palette, &hist, 4);
@@ -40,7 +40,7 @@ fn main() {
     state.info_raw().colortype = lodepng::ColorType::LCT_PALETTE;
 
     println!("Remapping image to palette");
-    let remapper = RemapperOrdered::new(&palette);
+    let remapper = RemapperOrdered2::new(&palette);
     let image: Vec<_> = remapper.remap8(&input_image, input.width);
 
     println!("Saving PNG");

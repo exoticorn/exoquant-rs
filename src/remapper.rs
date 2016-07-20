@@ -54,3 +54,52 @@ impl Remapper for RemapperOrdered {
             .collect()
     }
 }
+
+pub struct RemapperOrdered2 {
+    map: ColorMap,
+}
+
+impl RemapperOrdered2 {
+    pub fn new(palette: &[Color]) -> RemapperOrdered2 {
+        RemapperOrdered2 { map: ColorMap::new(palette) }
+    }
+}
+
+const DITHER_MATRIX2: [u32; 4] = [0, 2, 3, 1];
+
+impl Remapper for RemapperOrdered2 {
+    fn remap(&self, image: &[Color], width: usize) -> Vec<usize> {
+        image.iter()
+            .enumerate()
+            .map(|(i, c)| {
+                let x = i % width;
+                let y = i / width;
+                let color: FloatColor = c.into();
+                let i = self.map.find_nearest_float(color);
+                let c = self.map.float_color(i);
+                let diff = c - color;
+                let d = diff.abs();
+                if d < 0.00001 {
+                    return i;
+                }
+                let dir = diff * (1.0 / d);
+                let j = self.map.neighbor_in_dir(i, dir);
+                let c2 = self.map.float_color(j);
+                let d2 = (c2 - color).abs();
+                let f = d / (d + d2);
+                let offset = if f > 0.375 {
+                    2
+                } else if f > 0.125 {
+                    1
+                } else {
+                    0
+                };
+                let mut dither = DITHER_MATRIX2[(x & 1) + (y & 1) * 2];
+                if j < i {
+                    dither = 3 - dither;
+                }
+                if offset > dither { j } else { i }
+            })
+            .collect()
+    }
+}

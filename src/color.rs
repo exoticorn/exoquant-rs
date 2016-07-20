@@ -38,6 +38,10 @@ impl FloatColor {
     pub fn dot(&self, rhs: &FloatColor) -> f64 {
         self.r * rhs.r + self.g * rhs.g + self.b * rhs.b + self.a * rhs.a
     }
+
+    pub fn abs(&self) -> f64 {
+        self.dot(self).sqrt()
+    }
 }
 
 impl<'a> From<&'a Color> for FloatColor {

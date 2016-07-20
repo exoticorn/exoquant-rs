@@ -4,6 +4,7 @@ use ::color::FloatColor;
 pub struct ColorMap {
     kdtree: KDNode,
     neighbor_distance: Vec<f64>,
+    neighbors: Vec<Vec<usize>>,
     colors: Vec<FloatColor>,
 }
 
@@ -138,6 +139,11 @@ impl KDNode {
     }
 }
 
+fn occludes(origin: FloatColor, occluder: FloatColor, target: FloatColor) -> bool {
+    let dir = occluder - origin;
+    dir.dot(&dir) * 0.5 <= (target - origin).dot(&dir)
+}
+
 impl ColorMap {
     pub fn new(colors: &[Color]) -> ColorMap {
         let float_colors: Vec<_> = colors.iter().map(|c| c.into()).collect();
@@ -156,9 +162,23 @@ impl ColorMap {
                 }
             })
             .collect();
+        let neighbors = colors.iter()
+            .enumerate()
+            .map(|(i, &c)| {
+                let mut vec = Vec::new();
+                for (j, &c2) in colors.iter().enumerate() {
+                    if i != j && vec.iter().all(|&k| !occludes(c, colors[k], c2)) {
+                        vec.retain(|&k| !occludes(c, c2, colors[k]));
+                        vec.push(j);
+                    }
+                }
+                vec
+            })
+            .collect();
         ColorMap {
             kdtree: kdtree,
             neighbor_distance: neighbor_distance,
+            neighbors: neighbors,
             colors: colors,
         }
     }
@@ -177,6 +197,21 @@ impl ColorMap {
 
     pub fn neighbor_distance(&self, index: usize) -> f64 {
         self.neighbor_distance[index]
+    }
+
+    pub fn neighbor_in_dir(&self, index: usize, dir: FloatColor) -> usize {
+        let color = self.colors[index];
+        let mut neighbor = index;
+        let mut best = ::std::f64::MAX;
+        for &i in &self.neighbors[index] {
+            let diff = self.colors[i] - color;
+            let d = diff.dot(&diff) / diff.dot(&dir);
+            if d < best {
+                neighbor = i;
+                best = d;
+            }
+        }
+        neighbor
     }
 
     pub fn float_color(&self, index: usize) -> FloatColor {
