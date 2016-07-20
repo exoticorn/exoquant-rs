@@ -206,7 +206,7 @@ impl ColorMap {
         for &i in &self.neighbors[index] {
             let diff = self.colors[i] - color;
             let d = diff.dot(&diff) / diff.dot(&dir);
-            if d < best {
+            if d > 0.0 && d < best {
                 neighbor = i;
                 best = d;
             }

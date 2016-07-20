@@ -77,7 +77,7 @@ impl Remapper for RemapperOrdered2 {
                 let color: FloatColor = c.into();
                 let i = self.map.find_nearest_float(color);
                 let c = self.map.float_color(i);
-                let diff = c - color;
+                let diff = color - c;
                 let d = diff.abs();
                 if d < 0.00001 {
                     return i;

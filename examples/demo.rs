@@ -14,10 +14,10 @@ fn main() {
     hist.extend(input_image.iter().map(|c| *c));
 
     println!("Generating palette");
-    let palette = exoquant::create_palette(&hist, 64);
+    let palette = exoquant::create_palette(&hist, 256);
 
     println!("Optimize palette (k-means)");
-    let palette = exoquant::optimize_palette(palette, &hist, 4);
+    let palette = exoquant::optimize_palette(palette, &hist, 8);
 
     let mut state = lodepng::State::new();
     for color in &palette {
