@@ -1,5 +1,4 @@
-use std::ops::{Add, AddAssign, Sub, Mul, MulAssign};
-use std::convert::From;
+use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div};
 
 #[derive(Copy,Clone,Eq,PartialEq,Hash)]
 pub struct Color(pub u32);
@@ -41,26 +40,6 @@ impl FloatColor {
 
     pub fn abs(&self) -> f64 {
         self.dot(self).sqrt()
-    }
-}
-
-impl<'a> From<&'a Color> for FloatColor {
-    fn from(c: &'a Color) -> Self {
-        FloatColor {
-            r: c.r() as f64 / 255.0,
-            g: c.g() as f64 / 255.0,
-            b: c.b() as f64 / 255.0,
-            a: c.a() as f64 / 255.0,
-        }
-    }
-}
-
-impl From<FloatColor> for Color {
-    fn from(c: FloatColor) -> Self {
-        Color::rgba((c.r * 255.0).max(0.0).min(255.0) as u8,
-                    (c.g * 255.0).max(0.0).min(255.0) as u8,
-                    (c.b * 255.0).max(0.0).min(255.0) as u8,
-                    (c.a * 255.0).max(0.0).min(255.0) as u8)
     }
 }
 
@@ -138,6 +117,18 @@ impl Mul for FloatColor {
             g: self.g * rhs.g,
             b: self.b * rhs.b,
             a: self.a * rhs.a,
+        }
+    }
+}
+
+impl Div for FloatColor {
+    type Output = FloatColor;
+    fn div(self, rhs: FloatColor) -> FloatColor {
+        FloatColor {
+            r: self.r / rhs.r,
+            g: self.g / rhs.g,
+            b: self.b / rhs.b,
+            a: self.a / rhs.a,
         }
     }
 }

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use super::Color;
 use ::quantizer::HistColor;
+use ::colorspace::ColorSpace;
 
 pub struct Histogram {
     data: HashMap<Color, usize>,
@@ -12,12 +13,12 @@ impl Histogram {
         Histogram { data: HashMap::new() }
     }
 
-    pub fn to_hist_colors(&self) -> Vec<HistColor> {
+    pub fn to_hist_colors<T: ColorSpace>(&self, colorspace: &T) -> Vec<HistColor> {
         self.data
             .iter()
             .map(|(color, count)| {
                 HistColor {
-                    color: color.into(),
+                    color: colorspace.to_float(*color),
                     count: *count,
                 }
             })

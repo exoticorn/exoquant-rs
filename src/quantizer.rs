@@ -1,5 +1,6 @@
 use ::color::FloatColor;
 use ::color::Color;
+use ::colorspace::ColorSpace;
 
 pub struct HistColor {
     pub color: FloatColor,
@@ -100,8 +101,15 @@ impl QuantizerNode {
     }
 }
 
-pub fn create_palette(histogram: &::histogram::Histogram, num_colors: usize) -> Vec<Color> {
-    let hist: Vec<_> = histogram.to_hist_colors();
+pub fn create_palette<T: ColorSpace>(histogram: &::histogram::Histogram,
+                                     colorspace: &T,
+                                     num_colors: usize)
+                                     -> Vec<Color> {
+    let palette = create_palette_hist_colors(histogram.to_hist_colors(colorspace), num_colors);
+    palette.iter().map(|c| colorspace.from_float(*c)).collect()
+}
+
+fn create_palette_hist_colors(hist: Vec<HistColor>, num_colors: usize) -> Vec<FloatColor> {
 
     let mut nodes = vec![QuantizerNode::new(hist)];
 
@@ -126,5 +134,5 @@ pub fn create_palette(histogram: &::histogram::Histogram, num_colors: usize) -> 
         nodes.push(new_node2);
     }
 
-    nodes.iter().map(|n| n.avg.into()).collect()
+    nodes.iter().map(|n| n.avg).collect()
 }

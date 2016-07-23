@@ -1,5 +1,6 @@
 use ::color::Color;
 use ::color::FloatColor;
+use ::colorspace::ColorSpace;
 
 pub struct ColorMap {
     kdtree: KDNode,
@@ -145,8 +146,8 @@ fn occludes(origin: FloatColor, occluder: FloatColor, target: FloatColor) -> boo
 }
 
 impl ColorMap {
-    pub fn new(colors: &[Color]) -> ColorMap {
-        let float_colors: Vec<_> = colors.iter().map(|c| c.into()).collect();
+    pub fn new<T: ColorSpace>(colors: &[Color], colorspace: &T) -> ColorMap {
+        let float_colors: Vec<_> = colors.iter().map(|c| colorspace.to_float(*c)).collect();
         Self::from_float_colors(float_colors)
     }
 
@@ -183,11 +184,7 @@ impl ColorMap {
         }
     }
 
-    pub fn find_nearest(&self, color: &Color) -> usize {
-        self.find_nearest_float(color.into())
-    }
-
-    pub fn find_nearest_float(&self, color: FloatColor) -> usize {
+    pub fn find_nearest(&self, color: FloatColor) -> usize {
         if let Some(nearest) = self.kdtree.find_nearest(color, ::std::f64::MAX, ::std::usize::MAX) {
             nearest.index
         } else {
