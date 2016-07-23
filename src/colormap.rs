@@ -214,6 +214,22 @@ impl ColorMap {
         neighbor
     }
 
+    pub fn closest_neighbor(&self, index: usize, target: FloatColor) -> usize {
+        let color = self.colors[index];
+        let to_target = target - color;
+        let mut neighbor = index;
+        let mut best = ::std::f64::MAX;
+        for &i in &self.neighbors[index] {
+            let c = self.colors[i];
+            let d = (c - target).abs();
+            if d > 0.0 && d < best && (c - color).dot(&to_target) >= 0.0 {
+                neighbor = i;
+                best = d;
+            }
+        }
+        neighbor
+    }
+
     pub fn float_color(&self, index: usize) -> FloatColor {
         self.colors[index]
     }

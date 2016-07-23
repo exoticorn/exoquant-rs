@@ -84,9 +84,10 @@ impl Remapper for RemapperOrdered2 {
                 }
                 let dir = diff * (1.0 / d);
                 let j = self.map.neighbor_in_dir(i, dir);
+                // let j = self.map.closest_neighbor(i, color);
                 let c2 = self.map.float_color(j);
-                let d2 = (c2 - color).abs();
-                let f = d / (d + d2);
+                let span = c2 - c;
+                let f = (color - c).dot(&span) / span.dot(&span);
                 let offset = if f > 0.375 {
                     2
                 } else if f > 0.125 {
