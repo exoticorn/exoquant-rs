@@ -1,7 +1,10 @@
 use ::color::FloatColor;
 use ::color::Color;
 use ::colorspace::ColorSpace;
+use ::kmeans::kmeans_step_weighted;
+use ::colormap::ColorMap;
 
+#[derive(Clone)]
 pub struct HistColor {
     pub color: FloatColor,
     pub count: usize,
@@ -101,38 +104,66 @@ impl QuantizerNode {
     }
 }
 
-pub fn create_palette<T: ColorSpace>(histogram: &::histogram::Histogram,
-                                     colorspace: &T,
-                                     num_colors: usize)
-                                     -> Vec<Color> {
-    let palette = create_palette_hist_colors(histogram.to_hist_colors(colorspace), num_colors);
-    palette.iter().map(|c| colorspace.from_float(*c)).collect()
-}
+pub struct Quantizer(Vec<QuantizerNode>);
 
-fn create_palette_hist_colors(hist: Vec<HistColor>, num_colors: usize) -> Vec<FloatColor> {
+impl Quantizer {
+    pub fn new<T: ColorSpace>(histogram: &::histogram::Histogram, colorspace: &T) -> Quantizer {
+        let hist = histogram.to_hist_colors(colorspace);
+        Quantizer(vec![QuantizerNode::new(hist)])
+    }
 
-    let mut nodes = vec![QuantizerNode::new(hist)];
+    pub fn create_palette<T: ColorSpace>(histogram: &::histogram::Histogram,
+                                         colorspace: &T,
+                                         num_colors: usize)
+                                         -> Vec<Color> {
+        let mut quantizer = Self::new(histogram, colorspace);
+        while quantizer.num_colors() < num_colors {
+            quantizer.step();
+        }
+        quantizer.colors(colorspace)
+    }
 
-    while nodes.len() < num_colors {
+    pub fn num_colors(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn step(&mut self) {
         let (new_node1, new_node2) = {
             let node = {
                 let mut best_i = 0;
                 let mut best_e = 0.0;
-                for i in 0..nodes.len() {
-                    if nodes[i].vdif >= best_e {
-                        best_e = nodes[i].vdif;
+                for i in 0..self.0.len() {
+                    if self.0[i].vdif >= best_e {
+                        best_e = self.0[i].vdif;
                         best_i = i;
                     }
                 }
-                nodes.swap_remove(best_i)
+                self.0.swap_remove(best_i)
             };
             let mut colors1 = node.histogram;
             let colors2 = colors1.split_off(node.split);
             (QuantizerNode::new(colors1), QuantizerNode::new(colors2))
         };
-        nodes.push(new_node1);
-        nodes.push(new_node2);
+        self.0.push(new_node1);
+        self.0.push(new_node2);
     }
 
-    nodes.iter().map(|n| n.avg).collect()
+    pub fn colors<T: ColorSpace>(&self, colorspace: &T) -> Vec<Color> {
+        self.0.iter().map(|node| colorspace.from_float(node.avg)).collect()
+    }
+
+    pub fn do_kmeans_optimization(self, num_iterations: usize) -> Quantizer {
+        let (mut colors, histograms): (Vec<FloatColor>, Vec<Vec<HistColor>>) =
+            self.0.into_iter().map(|node| (node.avg, node.histogram)).unzip();
+        let histogram: Vec<HistColor> = histograms.iter().flat_map(|h| h.iter().cloned()).collect();
+        for _ in 0..num_iterations {
+            colors = kmeans_step_weighted(colors, &histogram);
+        }
+        let mut histograms: Vec<Vec<HistColor>> = (0..colors.len()).map(|_| Vec::new()).collect();
+        let map = ColorMap::from_float_colors(colors);
+        for color in histogram {
+            histograms[map.find_nearest(color.color)].push(color);
+        }
+        Quantizer(histograms.into_iter().map(|h| QuantizerNode::new(h)).collect())
+    }
 }

@@ -62,9 +62,9 @@ impl KDNode {
                 a: 1.0,
             }
         };
-        indices.sort_by(|a, b|
+        indices.sort_by(|a, b| {
             colors[*a].dot(&normal).partial_cmp(&colors[*b].dot(&normal)).unwrap()
-        );
+        });
         let i = indices.len() / 2;
         let left = if i > 0 {
             Some(Box::new(KDNode::new(indices[0..i].into(), colors)))
@@ -196,7 +196,7 @@ impl ColorMap {
         self.neighbor_distance[index]
     }
 
-    pub fn neighbor_in_dir(&self, index: usize, dir: FloatColor) -> usize {
+    fn neighbor_and_distance_dir(&self, index: usize, dir: FloatColor) -> (usize, f64) {
         let color = self.colors[index];
         let mut neighbor = index;
         let mut best = ::std::f64::MAX;
@@ -208,7 +208,15 @@ impl ColorMap {
                 best = d;
             }
         }
-        neighbor
+        (neighbor, best)
+    }
+
+    pub fn neighbor_in_dir(&self, index: usize, dir: FloatColor) -> usize {
+        self.neighbor_and_distance_dir(index, dir).0
+    }
+
+    pub fn neighbor_distance_dir(&self, index: usize, dir: FloatColor) -> f64 {
+        self.neighbor_and_distance_dir(index, dir).1
     }
 
     pub fn closest_neighbor(&self, index: usize, target: FloatColor) -> usize {

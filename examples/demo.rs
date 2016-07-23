@@ -5,7 +5,7 @@ use exoquant::{Color, Remapper, RemapperOrdered, SimpleColorSpace};
 
 fn main() {
     println!("Loading PNG");
-    let input = lodepng::decode32_file("baboon.png").unwrap();
+    let input = lodepng::decode32_file("test.png").unwrap();
     let input_image: Vec<_> =
         input.buffer.as_ref().iter().map(|c| Color::rgba(c.r, c.g, c.b, c.a)).collect();
 
@@ -16,10 +16,17 @@ fn main() {
     hist.extend(input_image.iter().map(|c| *c));
 
     println!("Generating palette");
-    let palette = exoquant::create_palette(&hist, &colorspace, 16);
+    let mut quantizer = exoquant::Quantizer::new(&hist, &colorspace);
+    while quantizer.num_colors() < 256 {
+        quantizer.step();
+        if quantizer.num_colors() % 16 == 0 {
+            quantizer = quantizer.do_kmeans_optimization(2);
+        }
+    }
+    let palette = quantizer.colors(&colorspace);
 
     println!("Optimize palette (k-means)");
-    let palette = exoquant::optimize_palette(&colorspace, palette, &hist, 8);
+    let palette = exoquant::optimize_palette_weighted(&colorspace, palette, &hist, 8);
 
     let mut state = lodepng::State::new();
     for color in &palette {
