@@ -117,7 +117,15 @@ impl Ditherer for DithererExperimentalOrdered {
     }
 }
 
-pub struct DithererFloydSteinberg;
+pub struct DithererFloydSteinberg(f64, f64, f64, f64, f64);
+impl DithererFloydSteinberg {
+    pub fn new() -> DithererFloydSteinberg {
+        DithererFloydSteinberg(7.0 / 16.0, 3.0 / 16.0, 5.0 / 16.0, 1.0 / 16.0, 0.8)
+    }
+    pub fn checkered() -> DithererFloydSteinberg {
+        DithererFloydSteinberg(7.0 / 16.0, 1.5 / 16.0, 6.5 / 16.0, 1.0 / 16.0, 0.5)
+    }
+}
 impl Ditherer for DithererFloydSteinberg {
     fn remap<T: ColorSpace>(&self,
                             map: &ColorMap,
@@ -125,19 +133,22 @@ impl Ditherer for DithererFloydSteinberg {
                             image: &[Color],
                             width: usize)
                             -> Vec<usize> {
-        let mut errors: Vec<_> = (0..width).map(|_| FloatColor::default()).collect();
+        let mut errors: Vec<_> = (0..(width * 2)).map(|_| FloatColor::default()).collect();
         image.iter()
             .enumerate()
             .map(|(i, c)| {
                 let x = i % width;
+                let y = (i / width) & 1;
+                let row = y * width;
+                let other = (y ^ 1) * width;
                 let c = colorspace.to_float(*c);
-                let index = map.find_nearest(c + errors[x]);
+                let index = map.find_nearest(c + errors[row + x]);
                 let c2 = map.float_color(index);
-                let error = (c - c2) * 0.5;
-                errors[x] = error;
-                if x + 1 < width {
-                    errors[x + 1] += error;
-                }
+                let error = c + errors[row + x] * self.4 - c2;
+                errors[row + (x + 1) % width] += error * self.0;
+                errors[other + (x + 1) % width] = error * self.3;
+                errors[other + x] += error * self.2;
+                errors[other + (x + width - 1) % width] += error * self.1;
                 index
             })
             .collect()

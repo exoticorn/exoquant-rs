@@ -27,7 +27,7 @@ fn main() {
     let palette = quantizer.colors(&colorspace);
 
     println!("Optimize palette (k-means)");
-    let palette = exoquant::optimize_palette_weighted(&colorspace, palette, &hist, 8);
+    let palette = exoquant::optimize_palette(&colorspace, palette, &hist, 8);
 
     let mut state = lodepng::State::new();
     for color in &palette {
@@ -50,7 +50,7 @@ fn main() {
     state.info_raw().colortype = lodepng::ColorType::LCT_PALETTE;
 
     println!("Remapping image to palette");
-    let remapper = Remapper::new(&palette, &colorspace, DithererFloydSteinberg);
+    let remapper = Remapper::new(&palette, &colorspace, DithererFloydSteinberg::checkered());
     let image: Vec<_> = remapper.remap8(&input_image, input.width);
 
     println!("Saving PNG");
