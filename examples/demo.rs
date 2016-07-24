@@ -1,7 +1,8 @@
 extern crate exoquant;
 extern crate lodepng;
 
-use exoquant::{Color, Remapper, RemapperOrdered, SimpleColorSpace};
+use exoquant::{Color, SimpleColorSpace};
+use exoquant::remapper::*;
 
 fn main() {
     println!("Loading PNG");
@@ -49,7 +50,7 @@ fn main() {
     state.info_raw().colortype = lodepng::ColorType::LCT_PALETTE;
 
     println!("Remapping image to palette");
-    let remapper = RemapperOrdered::new(&palette, &colorspace);
+    let remapper = Remapper::new(&palette, &colorspace, DithererOrdered);
     let image: Vec<_> = remapper.remap8(&input_image, input.width);
 
     println!("Saving PNG");

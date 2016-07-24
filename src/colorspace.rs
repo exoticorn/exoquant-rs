@@ -30,7 +30,7 @@ pub struct SimpleColorSpace {
 impl SimpleColorSpace {
     pub fn default() -> SimpleColorSpace {
         SimpleColorSpace {
-            gamma: 2.2,
+            gamma: 1.145,
             scale: FloatColor {
                 r: 1.0,
                 g: 1.2,

@@ -3,101 +3,101 @@ use ::color::FloatColor;
 use ::colormap::ColorMap;
 use ::colorspace::ColorSpace;
 
-pub trait Remapper {
-    fn remap(&self, image: &[Color], width: usize) -> Vec<usize>;
-    fn remap8(&self, image: &[Color], width: usize) -> Vec<u8> {
+pub struct Remapper<'a, T: 'a + ColorSpace, D: Ditherer> {
+    map: ColorMap,
+    colorspace: &'a T,
+    ditherer: D,
+}
+
+impl<'a, T: ColorSpace, D: Ditherer> Remapper<'a, T, D> {
+    pub fn new(palette: &[Color], colorspace: &'a T, ditherer: D) -> Remapper<'a, T, D> {
+        Remapper {
+            map: ColorMap::new(palette, colorspace),
+            colorspace: colorspace,
+            ditherer: ditherer,
+        }
+    }
+
+    pub fn remap(&self, image: &[Color], width: usize) -> Vec<usize> {
+        self.ditherer.remap(&self.map, self.colorspace, image, width)
+    }
+
+    pub fn remap8(&self, image: &[Color], width: usize) -> Vec<u8> {
         self.remap(image, width).iter().map(|i| *i as u8).collect()
     }
 }
 
-pub struct RemapperNoDither<'a, T: 'a + ColorSpace> {
-    map: ColorMap,
-    colorspace: &'a T,
+pub trait Ditherer {
+    fn remap<T: ColorSpace>(&self,
+                            map: &ColorMap,
+                            colorspace: &T,
+                            image: &[Color],
+                            width: usize)
+                            -> Vec<usize>;
 }
 
-impl<'a, T: ColorSpace> RemapperNoDither<'a, T> {
-    pub fn new(palette: &[Color], colorspace: &'a T) -> RemapperNoDither<'a, T> {
-        RemapperNoDither {
-            map: ColorMap::new(palette, colorspace),
-            colorspace: colorspace,
-        }
+pub struct DithererNone;
+impl Ditherer for DithererNone {
+    fn remap<T: ColorSpace>(&self,
+                            map: &ColorMap,
+                            colorspace: &T,
+                            image: &[Color],
+                            _: usize)
+                            -> Vec<usize> {
+        image.iter().map(|c| map.find_nearest(colorspace.to_float(*c))).collect()
     }
 }
 
-impl<'a, T: ColorSpace> Remapper for RemapperNoDither<'a, T> {
-    fn remap(&self, image: &[Color], _: usize) -> Vec<usize> {
-        image.iter().map(|c| self.map.find_nearest(self.colorspace.to_float(*c))).collect()
-    }
-}
-
-pub struct RemapperOrdered<'a, T: 'a + ColorSpace> {
-    map: ColorMap,
-    colorspace: &'a T,
-}
-
-impl<'a, T: ColorSpace> RemapperOrdered<'a, T> {
-    pub fn new(palette: &[Color], colorspace: &'a T) -> RemapperOrdered<'a, T> {
-        RemapperOrdered {
-            map: ColorMap::new(palette, colorspace),
-            colorspace: colorspace,
-        }
-    }
-}
-
+pub struct DithererOrdered;
 const DITHER_MATRIX: [f64; 4] = [-0.375, 0.125, 0.375, -0.125];
-
-impl<'a, T: ColorSpace> Remapper for RemapperOrdered<'a, T> {
-    fn remap(&self, image: &[Color], width: usize) -> Vec<usize> {
+impl Ditherer for DithererOrdered {
+    fn remap<T: ColorSpace>(&self,
+                            map: &ColorMap,
+                            colorspace: &T,
+                            image: &[Color],
+                            width: usize)
+                            -> Vec<usize> {
         image.iter()
             .enumerate()
             .map(|(i, c)| {
                 let x = i % width;
                 let y = i / width;
                 let dither = DITHER_MATRIX[(x & 1) + (y & 1) * 2];
-                let color: FloatColor = self.colorspace.to_float(*c);
-                let i = self.map.find_nearest(color);
-                let d = self.map.neighbor_distance(i);
+                let color: FloatColor = colorspace.to_float(*c);
+                let i = map.find_nearest(color);
+                let d = map.neighbor_distance(i);
                 let color = color + (d * dither * 0.75);
-                self.map.find_nearest(color)
+                map.find_nearest(color)
             })
             .collect()
     }
 }
 
-pub struct RemapperOrdered2<'a, T: 'a + ColorSpace> {
-    map: ColorMap,
-    colorspace: &'a T,
-}
-
-impl<'a, T: ColorSpace> RemapperOrdered2<'a, T> {
-    pub fn new(palette: &[Color], colorspace: &'a T) -> RemapperOrdered2<'a, T> {
-        RemapperOrdered2 {
-            map: ColorMap::new(palette, colorspace),
-            colorspace: colorspace,
-        }
-    }
-}
-
+pub struct DithererExperimentalOrdered;
 const DITHER_MATRIX2: [u32; 4] = [0, 2, 3, 1];
-
-impl<'a, T: ColorSpace> Remapper for RemapperOrdered2<'a, T> {
-    fn remap(&self, image: &[Color], width: usize) -> Vec<usize> {
+impl Ditherer for DithererExperimentalOrdered {
+    fn remap<T: ColorSpace>(&self,
+                            map: &ColorMap,
+                            colorspace: &T,
+                            image: &[Color],
+                            width: usize)
+                            -> Vec<usize> {
         image.iter()
             .enumerate()
             .map(|(i, c)| {
                 let x = i % width;
                 let y = i / width;
-                let color: FloatColor = self.colorspace.to_float(*c);
-                let i = self.map.find_nearest(color);
-                let c = self.map.float_color(i);
+                let color: FloatColor = colorspace.to_float(*c);
+                let i = map.find_nearest(color);
+                let c = map.float_color(i);
                 let diff = color - c;
                 let d = diff.abs();
                 if d < 0.00001 {
                     return i;
                 }
                 let dir = diff * (1.0 / d);
-                let j = self.map.neighbor_in_dir(i, dir);
-                let c2 = self.map.float_color(j);
+                let j = map.neighbor_in_dir(i, dir);
+                let c2 = map.float_color(j);
                 let span = c2 - c;
                 let f = (color - c).dot(&span) / span.dot(&span);
                 let offset = if f > 0.375 {
