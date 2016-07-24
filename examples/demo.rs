@@ -50,7 +50,7 @@ fn main() {
     state.info_raw().colortype = lodepng::ColorType::LCT_PALETTE;
 
     println!("Remapping image to palette");
-    let remapper = Remapper::new(&palette, &colorspace, DithererOrdered);
+    let remapper = Remapper::new(&palette, &colorspace, DithererFloydSteinberg);
     let image: Vec<_> = remapper.remap8(&input_image, input.width);
 
     println!("Saving PNG");

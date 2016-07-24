@@ -116,3 +116,30 @@ impl Ditherer for DithererExperimentalOrdered {
             .collect()
     }
 }
+
+pub struct DithererFloydSteinberg;
+impl Ditherer for DithererFloydSteinberg {
+    fn remap<T: ColorSpace>(&self,
+                            map: &ColorMap,
+                            colorspace: &T,
+                            image: &[Color],
+                            width: usize)
+                            -> Vec<usize> {
+        let mut errors: Vec<_> = (0..width).map(|_| FloatColor::default()).collect();
+        image.iter()
+            .enumerate()
+            .map(|(i, c)| {
+                let x = i % width;
+                let c = colorspace.to_float(*c);
+                let index = map.find_nearest(c + errors[x]);
+                let c2 = map.float_color(index);
+                let error = (c - c2) * 0.5;
+                errors[x] = error;
+                if x + 1 < width {
+                    errors[x + 1] += error;
+                }
+                index
+            })
+            .collect()
+    }
+}
