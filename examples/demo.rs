@@ -29,6 +29,13 @@ fn main() {
     println!("Optimize palette (k-means)");
     let palette = exoquant::optimize_palette(&colorspace, palette, &hist, 8);
 
+    println!("Remapping image to palette");
+    let remapper = Remapper::new(&palette, &colorspace, DithererFloydSteinberg::checkered());
+    let image: Vec<_> = remapper.remap8(&input_image, input.width);
+
+    let (palette, image) = exoquant::sort_palette(&palette, &image);
+
+    println!("Saving PNG");
     let mut state = lodepng::State::new();
     for color in &palette {
         unsafe {
@@ -49,11 +56,6 @@ fn main() {
     state.info_raw().bitdepth = 8;
     state.info_raw().colortype = lodepng::ColorType::LCT_PALETTE;
 
-    println!("Remapping image to palette");
-    let remapper = Remapper::new(&palette, &colorspace, DithererFloydSteinberg::checkered());
-    let image: Vec<_> = remapper.remap8(&input_image, input.width);
-
-    println!("Saving PNG");
     state.encode_file("out.png", &image, input.width, input.height).unwrap();
     println!("done!");
 }
