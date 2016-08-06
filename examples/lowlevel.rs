@@ -5,6 +5,7 @@ mod png;
 use std::env;
 use exoquant::*;
 
+// usage: cargo run --release --demo lowlevel <in.png> <out.png> <num_colors>
 fn main() {
     let mut args = env::args();
     args.next();
@@ -35,7 +36,7 @@ fn main() {
     let palette = optimize_palette(&colorspace, palette, &hist, 8);
 
     println!("Remapping image to palette");
-    let remapper = Remapper::new(&palette, &colorspace, DithererFloydSteinberg::checkered());
+    let remapper = Remapper::new(&palette, &colorspace, &DithererFloydSteinberg::checkered());
     let image: Vec<_> = remapper.remap8(&input_image, width);
 
     let (palette, image) = sort_palette(&palette, &image);

@@ -30,7 +30,7 @@ pub fn kmeans_step(colors: Vec<FloatColor>, histogram: &[HistColor]) -> Vec<Floa
 }
 
 pub fn optimize_palette<T: ColorSpace>(colorspace: &T,
-                                       palette: Vec<Color>,
+                                       palette: &[Color],
                                        histogram: &Histogram,
                                        num_iterations: usize)
                                        -> Vec<Color> {
@@ -93,7 +93,7 @@ pub fn kmeans_step_weighted(mut colors: Vec<FloatColor>,
 }
 
 pub fn optimize_palette_weighted<T: ColorSpace>(colorspace: &T,
-                                                palette: Vec<Color>,
+                                                palette: &[Color],
                                                 histogram: &Histogram,
                                                 num_iterations: usize)
                                                 -> Vec<Color> {

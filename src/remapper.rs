@@ -3,14 +3,14 @@ use ::color::FloatColor;
 use ::colormap::ColorMap;
 use ::colorspace::ColorSpace;
 
-pub struct Remapper<'a, T: 'a + ColorSpace, D: Ditherer> {
+pub struct Remapper<'a, T: 'a + ColorSpace, D: 'a + Ditherer> {
     map: ColorMap,
     colorspace: &'a T,
-    ditherer: D,
+    ditherer: &'a D,
 }
 
 impl<'a, T: ColorSpace, D: Ditherer> Remapper<'a, T, D> {
-    pub fn new(palette: &[Color], colorspace: &'a T, ditherer: D) -> Remapper<'a, T, D> {
+    pub fn new(palette: &[Color], colorspace: &'a T, ditherer: &'a D) -> Remapper<'a, T, D> {
         Remapper {
             map: ColorMap::new(palette, colorspace),
             colorspace: colorspace,

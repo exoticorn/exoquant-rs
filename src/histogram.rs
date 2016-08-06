@@ -24,6 +24,10 @@ impl Histogram {
             })
             .collect()
     }
+
+    pub fn iter<'a>(&'a self) -> Box<Iterator<Item = (&Color, &usize)> + 'a> {
+        Box::new(self.data.iter())
+    }
 }
 
 impl Extend<Color> for Histogram {

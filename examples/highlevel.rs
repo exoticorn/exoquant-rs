@@ -5,6 +5,7 @@ mod png;
 use exoquant::*;
 use std::env;
 
+// usage: cargo run --release --demo highlevel <in.png> <out.png> <num_colors>
 fn main() {
     let mut args = env::args();
     args.next();
@@ -17,7 +18,7 @@ fn main() {
     let (palette, out_image) = convert_to_indexed(&input_image,
                                                   width,
                                                   num_colors,
-                                                  DithererFloydSteinberg::checkered());
+                                                  &DithererFloydSteinberg::checkered());
 
     png::save(&out_name, &palette, &out_image, width, height);
 }
