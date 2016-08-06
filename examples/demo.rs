@@ -32,6 +32,8 @@ fn main() {
     let remapper = Remapper::new(&palette, &colorspace, DithererFloydSteinberg::checkered());
     let image: Vec<_> = remapper.remap8(&input_image, width);
 
+    let (palette, image) = exoquant::sort_palette(&palette, &image);
+
     println!("Saving PNG");
     png::save("out.png", &palette, &image, width, height);
 
