@@ -1,8 +1,8 @@
 use std::collections::HashMap;
+use std::iter::{FromIterator, IntoIterator};
 
-use super::Color;
-use ::quantizer::HistColor;
-use ::colorspace::ColorSpace;
+use super::*;
+use super::quantizer::HistColor;
 
 pub struct Histogram {
     data: HashMap<Color, usize>,
@@ -34,6 +34,16 @@ impl Extend<Color> for Histogram {
             let count = self.data.entry(pixel).or_insert(0);
             *count += 1;
         }
+    }
+}
+
+impl FromIterator<Color> for Histogram {
+    fn from_iter<T>(iter: T) -> Self
+        where T: IntoIterator<Item = Color>
+    {
+        let mut histogram = Histogram::new();
+        histogram.extend(iter.into_iter());
+        histogram
     }
 }
 

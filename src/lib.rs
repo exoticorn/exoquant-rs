@@ -1,15 +1,20 @@
 mod color;
 mod histogram;
 mod quantizer;
-pub mod colormap;
-pub mod remapper;
+mod colormap;
+mod remapper;
 mod kmeans;
-pub mod colorspace;
+mod colorspace;
 mod palettesort;
+mod basicapi;
 
-pub use color::Color;
-pub use histogram::Histogram;
-pub use quantizer::Quantizer;
-pub use kmeans::{optimize_palette, optimize_palette_weighted};
+pub use basicapi::convert_to_indexed;
+pub use color::{Color, FloatColor};
+pub use colormap::ColorMap;
 pub use colorspace::{ColorSpace, SimpleColorSpace};
+pub use histogram::Histogram;
+pub use kmeans::{optimize_palette, optimize_palette_weighted};
 pub use palettesort::sort_palette;
+pub use quantizer::Quantizer;
+pub use remapper::{Remapper, Ditherer, DithererNone, DithererOrdered, DithererExperimentalOrdered,
+                   DithererFloydSteinberg};
