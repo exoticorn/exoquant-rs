@@ -5,3 +5,4 @@ authors = ["Dennis Ranke <dennis.ranke@gmail.com>"]
 
 [dev-dependencies]
 lodepng = "0.8.1"
+simplesvg = "0.3.0"
