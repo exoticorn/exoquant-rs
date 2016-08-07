@@ -27,16 +27,17 @@ fn main() {
     while quantizer.num_colors() < num_colors {
         quantizer.step();
         if quantizer.num_colors() % kmeans_step == 0 {
-            quantizer = quantizer.do_kmeans_optimization(2);
+            quantizer = quantizer.do_weighted_kmeans_optimization(2);
         }
     }
     let palette = quantizer.colors(&colorspace);
 
     println!("Optimize palette (k-means)");
-    let palette = optimize_palette(&colorspace, palette, &hist, 8);
+    let palette = optimize_palette_weighted(&colorspace, &palette, &hist, 8);
 
     println!("Remapping image to palette");
-    let remapper = Remapper::new(&palette, &colorspace, &DithererFloydSteinberg::checkered());
+    let ditherer = DithererFloydSteinberg::checkered();
+    let remapper = Remapper::new(&palette, &colorspace, &ditherer);
     let image: Vec<_> = remapper.remap8(&input_image, width);
 
     let (palette, image) = sort_palette(&palette, &image);

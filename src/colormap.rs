@@ -235,6 +235,10 @@ impl ColorMap {
         neighbor
     }
 
+    pub fn neighbors(&self, index: usize) -> &[usize] {
+        &self.neighbors[index]
+    }
+
     pub fn float_color(&self, index: usize) -> FloatColor {
         self.colors[index]
     }

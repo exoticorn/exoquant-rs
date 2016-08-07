@@ -45,7 +45,7 @@ fn main() {
 
     let colorspace = SimpleColorSpace::default();
     let hist = image.iter().cloned().random_sample(1000. / (width * height) as f32).collect();
-    let palette_noopt = generate_palette(&hist, &colorspace, 16);
+    let palette_noopt = generate_palette(&hist, &colorspace, 8);
 
     let palette_noweight = optimize_palette(&colorspace, &palette_noopt, &hist, 32);
 

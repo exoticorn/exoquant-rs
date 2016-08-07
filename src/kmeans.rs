@@ -4,6 +4,7 @@ use ::quantizer::HistColor;
 use ::colormap::ColorMap;
 use ::histogram::Histogram;
 use ::colorspace::ColorSpace;
+use std::f64;
 
 struct KMeansCluster {
     sum: FloatColor,
@@ -45,7 +46,6 @@ pub fn optimize_palette<T: ColorSpace>(colorspace: &T,
 pub fn kmeans_step_weighted(mut colors: Vec<FloatColor>,
                             histogram: &[HistColor])
                             -> Vec<FloatColor> {
-    let mut hist_indices = Vec::<usize>::with_capacity(histogram.len());
     let map = ColorMap::from_float_colors(colors.clone());
     let mut clusters: Vec<_> = (0..colors.len())
         .map(|_| {
@@ -57,27 +57,25 @@ pub fn kmeans_step_weighted(mut colors: Vec<FloatColor>,
         .collect();
     for entry in histogram {
         let index = map.find_nearest(entry.color);
-        let mut cluster = &mut clusters[index];
-        cluster.sum += entry.color * entry.count as f64;
-        cluster.weight += entry.count as f64;
-        hist_indices.push(index);
-    }
-    for i in 0..colors.len() {
-        let mut cluster = &mut clusters[i];
-        if cluster.weight > 0.0 {
-            colors[i] = cluster.sum * (1.0 / cluster.weight);
+        let neighbors = map.neighbors(index);
+        let mut error_sum = 0.;
+        let mut color = entry.color;
+        for _ in 0..4 {
+            let mut best_i = 0;
+            let mut best_error = f64::MAX;
+            for &i in neighbors {
+                let diff = color - colors[i];
+                let error = diff.abs();
+                if error < best_error {
+                    best_i = i;
+                    best_error = error;
+                }
+            }
+            error_sum += best_error * best_error;
+            color = entry.color + color - colors[best_i];
         }
-        cluster.sum = FloatColor::default();
-        cluster.weight = 0.0;
-    }
-    for (i, entry) in histogram.iter().enumerate() {
-        let index = hist_indices[i];
-        let mut dir = entry.color - colors[index];
-        let distance = dir.abs();
-        dir *= 1.0 / distance;
-        let neighbor_distance = map.neighbor_distance_dir(index, dir).min(10.0);
         let mut cluster = &mut clusters[index];
-        let weight = (distance * distance * neighbor_distance) * entry.count as f64;
+        let weight = entry.count as f64 * error_sum;
         cluster.sum += entry.color * weight;
         cluster.weight += weight;
     }
