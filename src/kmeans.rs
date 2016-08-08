@@ -71,11 +71,11 @@ pub fn kmeans_step_weighted(mut colors: Vec<FloatColor>,
                     best_error = error;
                 }
             }
-            error_sum += best_error * best_error;
+            error_sum += best_error;
             color = entry.color + color - colors[best_i];
         }
         let mut cluster = &mut clusters[index];
-        let weight = entry.count as f64 * error_sum;
+        let weight = entry.count as f64 * error_sum.powi(4);
         cluster.sum += entry.color * weight;
         cluster.weight += weight;
     }
