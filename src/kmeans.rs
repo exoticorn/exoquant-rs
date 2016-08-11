@@ -58,7 +58,7 @@ pub fn kmeans_step_weighted(mut colors: Vec<FloatColor>,
     for entry in histogram {
         let index = map.find_nearest(entry.color);
         let neighbors = map.neighbors(index);
-        let mut error_sum = 0.;
+        let mut error_sum = FloatColor::default();
         let mut color = entry.color;
         for _ in 0..4 {
             let mut best_i = 0;
@@ -71,11 +71,12 @@ pub fn kmeans_step_weighted(mut colors: Vec<FloatColor>,
                     best_error = error;
                 }
             }
-            error_sum += best_error;
-            color = entry.color + color - colors[best_i];
+            let diff = color - colors[best_i];
+            error_sum += diff;
+            color = entry.color + diff;
         }
         let mut cluster = &mut clusters[index];
-        let weight = entry.count as f64 * error_sum.powi(4);
+        let weight = entry.count as f64 * error_sum.dot(&error_sum);
         cluster.sum += entry.color * weight;
         cluster.weight += weight;
     }
