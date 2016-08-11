@@ -196,45 +196,6 @@ impl ColorMap {
         self.neighbor_distance[index]
     }
 
-    fn neighbor_and_distance_dir(&self, index: usize, dir: FloatColor) -> (usize, f64) {
-        let color = self.colors[index];
-        let mut neighbor = index;
-        let mut best = ::std::f64::MAX;
-        for &i in &self.neighbors[index] {
-            let diff = self.colors[i] - color;
-            let d = diff.dot(&diff) / diff.dot(&dir);
-            if d > 0.0 && d < best {
-                neighbor = i;
-                best = d;
-            }
-        }
-        (neighbor, best)
-    }
-
-    pub fn neighbor_in_dir(&self, index: usize, dir: FloatColor) -> usize {
-        self.neighbor_and_distance_dir(index, dir).0
-    }
-
-    pub fn neighbor_distance_dir(&self, index: usize, dir: FloatColor) -> f64 {
-        self.neighbor_and_distance_dir(index, dir).1
-    }
-
-    pub fn closest_neighbor(&self, index: usize, target: FloatColor) -> usize {
-        let color = self.colors[index];
-        let to_target = target - color;
-        let mut neighbor = index;
-        let mut best = ::std::f64::MAX;
-        for &i in &self.neighbors[index] {
-            let c = self.colors[i];
-            let d = (c - target).abs();
-            if d > 0.0 && d < best && (c - color).dot(&to_target) >= 0.0 {
-                neighbor = i;
-                best = d;
-            }
-        }
-        neighbor
-    }
-
     pub fn neighbors(&self, index: usize) -> &[usize] {
         &self.neighbors[index]
     }

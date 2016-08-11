@@ -73,54 +73,6 @@ impl Ditherer for DithererOrdered {
     }
 }
 
-pub struct DithererExperimentalOrdered;
-const DITHER_MATRIX2: [u32; 4] = [0, 2, 3, 1];
-impl Ditherer for DithererExperimentalOrdered {
-    fn remap<T: ColorSpace>(&self,
-                            map: &ColorMap,
-                            colorspace: &T,
-                            image: &[Color],
-                            width: usize)
-                            -> Vec<usize> {
-        image.iter()
-            .enumerate()
-            .map(|(i, c)| {
-                let x = i % width;
-                let y = i / width;
-                let color: FloatColor = colorspace.to_float(*c);
-                let i = map.find_nearest(color);
-                let c = map.float_color(i);
-                let diff = color - c;
-                let d = diff.abs();
-                if d < 0.00001 {
-                    return i;
-                }
-                let dir = diff * (1.0 / d);
-                let j = map.neighbor_in_dir(i, dir);
-                let c2 = map.float_color(j);
-                let span = c2 - c;
-                let f = (color - c).dot(&span) / span.dot(&span);
-                let offset = if f > 0.375 {
-                    2
-                } else if f > 0.125 {
-                    1
-                } else {
-                    0
-                };
-                let mut dither = DITHER_MATRIX2[(x & 1) + (y & 1) * 2];
-                if j < i {
-                    dither = 3 - dither;
-                }
-                if offset > dither {
-                    j
-                } else {
-                    i
-                }
-            })
-            .collect()
-    }
-}
-
 pub struct DithererFloydSteinberg(f64, f64, f64, f64, f64);
 impl DithererFloydSteinberg {
     pub fn new() -> DithererFloydSteinberg {

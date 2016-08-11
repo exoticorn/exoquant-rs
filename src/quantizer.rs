@@ -1,7 +1,7 @@
 use ::color::FloatColor;
 use ::color::Color;
 use ::colorspace::ColorSpace;
-use ::kmeans::{kmeans_step, kmeans_step_weighted};
+use ::kmeans::KMeans;
 use ::colormap::ColorMap;
 
 #[derive(Clone)]
@@ -66,7 +66,11 @@ impl QuantizerNode {
 
         dir *= {
             let s = dir.dot(&dir).sqrt();
-            if s < 0.000000001 { 1.0 } else { 1.0 / s }
+            if s < 0.000000001 {
+                1.0
+            } else {
+                1.0 / s
+            }
         };
 
         // Now sort histogram by primary vector
@@ -152,27 +156,17 @@ impl Quantizer {
         self.0.iter().map(|node| colorspace.from_float(node.avg)).collect()
     }
 
-    pub fn do_kmeans_optimization(self, num_iterations: usize) -> Quantizer {
+    pub fn do_kmeans_optimization<K>(self, kmeans: &K, num_iterations: usize) -> Quantizer
+        where K: KMeans
+    {
+        if kmeans.is_noop() {
+            return self;
+        }
         let (mut colors, histograms): (Vec<FloatColor>, Vec<Vec<HistColor>>) =
             self.0.into_iter().map(|node| (node.avg, node.histogram)).unzip();
         let histogram: Vec<HistColor> = histograms.iter().flat_map(|h| h.iter().cloned()).collect();
         for _ in 0..num_iterations {
-            colors = kmeans_step(colors, &histogram);
-        }
-        let mut histograms: Vec<Vec<HistColor>> = (0..colors.len()).map(|_| Vec::new()).collect();
-        let map = ColorMap::from_float_colors(colors);
-        for color in histogram {
-            histograms[map.find_nearest(color.color)].push(color);
-        }
-        Quantizer(histograms.into_iter().map(|h| QuantizerNode::new(h)).collect())
-    }
-
-    pub fn do_weighted_kmeans_optimization(self, num_iterations: usize) -> Quantizer {
-        let (mut colors, histograms): (Vec<FloatColor>, Vec<Vec<HistColor>>) =
-            self.0.into_iter().map(|node| (node.avg, node.histogram)).unzip();
-        let histogram: Vec<HistColor> = histograms.iter().flat_map(|h| h.iter().cloned()).collect();
-        for _ in 0..num_iterations {
-            colors = kmeans_step_weighted(colors, &histogram);
+            colors = kmeans.step(colors, &histogram);
         }
         let mut histograms: Vec<Vec<HistColor>> = (0..colors.len()).map(|_| Vec::new()).collect();
         let map = ColorMap::from_float_colors(colors);
