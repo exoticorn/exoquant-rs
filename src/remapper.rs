@@ -111,7 +111,11 @@ impl Ditherer for DithererExperimentalOrdered {
                 if j < i {
                     dither = 3 - dither;
                 }
-                if offset > dither { j } else { i }
+                if offset > dither {
+                    j
+                } else {
+                    i
+                }
             })
             .collect()
     }
@@ -142,9 +146,10 @@ impl Ditherer for DithererFloydSteinberg {
                 let row = y * width;
                 let other = (y ^ 1) * width;
                 let c = colorspace.to_float(*c);
-                let index = map.find_nearest(c + errors[row + x]);
+                let c = colorspace.to_dither(c);
+                let index = map.find_nearest(colorspace.from_dither(c + errors[row + x]));
                 let c2 = map.float_color(index);
-                let error = c + errors[row + x] * self.4 - c2;
+                let error = c + errors[row + x] * self.4 - colorspace.to_dither(c2);
                 errors[row + (x + 1) % width] += error * self.0;
                 errors[other + (x + 1) % width] = error * self.3;
                 errors[other + x] += error * self.2;

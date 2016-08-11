@@ -41,6 +41,15 @@ impl FloatColor {
     pub fn abs(&self) -> f64 {
         self.dot(self).sqrt()
     }
+
+    pub fn pow(&self, e: f64) -> FloatColor {
+        FloatColor {
+            r: self.r.max(0.0).powf(e),
+            g: self.g.max(0.0).powf(e),
+            b: self.b.max(0.0).powf(e),
+            a: self.a.max(0.0).powf(e),
+        }
+    }
 }
 
 impl Add for FloatColor {
