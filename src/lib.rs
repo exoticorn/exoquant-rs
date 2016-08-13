@@ -2,12 +2,13 @@ mod color;
 mod histogram;
 mod quantizer;
 mod colormap;
-mod remapper;
+pub mod remapper;
 pub mod optimizer;
 mod colorspace;
 mod palettesort;
 mod basicapi;
-mod random_sample;
+pub mod random_sample;
+pub mod ditherer;
 
 pub use basicapi::{convert_to_indexed, generate_palette};
 pub use color::*;
@@ -17,6 +18,6 @@ pub use histogram::*;
 pub use optimizer::Optimizer;
 pub use palettesort::sort_palette;
 pub use quantizer::Quantizer;
-pub use random_sample::{RandomSample, RandomSampleIter};
-pub use remapper::{Remapper, Ditherer, DithererNone, DithererOrdered, DithererOrdered2,
-                   DithererFloydSteinberg};
+pub use random_sample::RandomSample;
+pub use remapper::Remapper;
+pub use ditherer::Ditherer;

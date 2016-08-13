@@ -38,9 +38,9 @@ fn main() {
     let palette = optimizer.optimize_palette(&colorspace, &palette, &hist, 8);
 
     println!("Remapping image to palette");
-    let ditherer = DithererFloydSteinberg::checkered();
+    let ditherer = ditherer::FloydSteinberg::checkered();
     let remapper = Remapper::new(&palette, &colorspace, &ditherer);
-    let image: Vec<_> = remapper.remap8(&input_image, width);
+    let image: Vec<_> = remapper.remap(&input_image, width);
 
     let (palette, image) = sort_palette(&palette, &image);
 

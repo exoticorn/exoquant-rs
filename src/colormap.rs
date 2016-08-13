@@ -201,4 +201,8 @@ impl ColorMap {
     pub fn float_color(&self, index: usize) -> Colorf {
         self.colors[index]
     }
+
+    pub fn num_colors(&self) -> usize {
+        self.colors.len()
+    }
 }

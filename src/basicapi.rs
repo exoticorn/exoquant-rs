@@ -17,8 +17,7 @@ pub fn convert_to_indexed<D, O>(image: &[Color],
 
     let palette = optimizer.optimize_palette(&colorspace, &palette, &hist, 8);
 
-    let remapper = Remapper::new(&palette, &colorspace, ditherer);
-    let image: Vec<_> = remapper.remap8(image, width);
+    let image = Remapper::new(&palette, &colorspace, ditherer).remap(image, width);
 
     sort_palette(&palette, &image)
 }

@@ -19,7 +19,7 @@ fn main() {
                                                   width,
                                                   num_colors,
                                                   &optimizer::KMeans,
-                                                  &DithererFloydSteinberg::checkered());
+                                                  &ditherer::FloydSteinberg::checkered());
 
     png::save(&out_name, &palette, &out_image, width, height);
 }

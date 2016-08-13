@@ -32,7 +32,7 @@ fn main() {
         .map(|&c| Color::new(c.r, c.b, ((c.r as u32 + c.g as u32) / 2) as u8, c.a))
         .collect();
 
-    let ditherer = DithererFloydSteinberg::new();
+    let ditherer = ditherer::FloydSteinberg::new();
 
     let (palette, out_image) =
         convert_to_indexed(&image, width, 256, &optimizer::KMeans, &ditherer);
@@ -47,7 +47,7 @@ fn main() {
         optimizer::KMeans.optimize_palette(&colorspace, &palette_noopt, &hist, 32);
 
     let remapper = Remapper::new(&palette_noweight, &colorspace, &ditherer);
-    let out_image: Vec<_> = remapper.remap8(&image, width);
+    let out_image: Vec<_> = remapper.remap(&image, width);
 
     png::save("weighted_8.png",
               &palette_noweight,
@@ -64,7 +64,7 @@ fn main() {
     }
 
     let remapper = Remapper::new(&palette_weight, &colorspace, &ditherer);
-    let out_image: Vec<_> = remapper.remap8(&image, width);
+    let out_image: Vec<_> = remapper.remap(&image, width);
 
     png::save("weighted_8w.png",
               &palette_weight,
