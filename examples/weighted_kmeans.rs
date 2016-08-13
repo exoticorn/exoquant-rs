@@ -39,15 +39,17 @@ fn main() {
 
     let ditherer = DithererFloydSteinberg::new();
 
-    let (palette, out_image) = convert_to_indexed(&image, width, 256, &ditherer);
+    let (palette, out_image) =
+        convert_to_indexed(&image, width, 256, &optimizer::KMeans, &ditherer);
 
     png::save("weighted_orig.png", &palette, &out_image, width, height);
 
     let colorspace = SimpleColorSpace::default();
     let hist = image.iter().cloned().random_sample(1000. / (width * height) as f32).collect();
-    let palette_noopt = generate_palette(&hist, &colorspace, 8);
+    let palette_noopt = generate_palette(&hist, &colorspace, &optimizer::None, 8);
 
-    let palette_noweight = optimize_palette(&colorspace, &palette_noopt, &hist, 32);
+    let palette_noweight =
+        optimizer::KMeans.optimize_palette(&colorspace, &palette_noopt, &hist, 32);
 
     let remapper = Remapper::new(&palette_noweight, &colorspace, &ditherer);
     let out_image: Vec<_> = remapper.remap8(&image, width);
@@ -61,7 +63,8 @@ fn main() {
     let mut diags = vec![render_box(&hist, &palette_noopt)];
     let mut palette_weight = palette_noopt.clone();
     for _ in 0..8 {
-        palette_weight = optimize_palette_weighted(&colorspace, &palette_weight, &hist, 1);
+        palette_weight =
+            optimizer::WeightedKMeans.optimize_palette(&colorspace, &palette_weight, &hist, 1);
         diags.push(render_box(&hist, &palette_weight));
     }
 

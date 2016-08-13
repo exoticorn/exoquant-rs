@@ -21,7 +21,7 @@ fn main() {
     println!("Building histogram");
     let hist = input_image.iter().cloned().collect();
 
-    let kmeans = WeightedKMeans;
+    let optimizer = optimizer::WeightedKMeans;
 
     println!("Generating palette");
     let mut quantizer = Quantizer::new(&hist, &colorspace);
@@ -29,13 +29,13 @@ fn main() {
     while quantizer.num_colors() < num_colors {
         quantizer.step();
         if quantizer.num_colors() % kmeans_step == 0 {
-            quantizer = quantizer.do_kmeans_optimization(&kmeans, 2);
+            quantizer = quantizer.optimize(&optimizer, 2);
         }
     }
     let palette = quantizer.colors(&colorspace);
 
     println!("Optimize palette (k-means)");
-    let palette = kmeans.optimize_palette(&colorspace, &palette, &hist, 8);
+    let palette = optimizer.optimize_palette(&colorspace, &palette, &hist, 8);
 
     println!("Remapping image to palette");
     let ditherer = DithererFloydSteinberg::checkered();

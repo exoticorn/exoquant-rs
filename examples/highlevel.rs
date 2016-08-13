@@ -18,7 +18,7 @@ fn main() {
     let (palette, out_image) = convert_to_indexed(&input_image,
                                                   width,
                                                   num_colors,
-                                                  &DefaultKMeans,
+                                                  &optimizer::KMeans,
                                                   &DithererFloydSteinberg::checkered());
 
     png::save(&out_name, &palette, &out_image, width, height);

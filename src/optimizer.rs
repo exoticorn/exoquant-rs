@@ -6,12 +6,7 @@ use ::histogram::Histogram;
 use ::colorspace::ColorSpace;
 use std::f64;
 
-struct KMeansCluster {
-    sum: FloatColor,
-    weight: f64,
-}
-
-pub trait KMeans {
+pub trait Optimizer {
     fn step(&self, colors: Vec<FloatColor>, histogram: &[HistColor]) -> Vec<FloatColor>;
 
     fn optimize_palette<C: ColorSpace>(&self,
@@ -36,9 +31,9 @@ pub trait KMeans {
     }
 }
 
-pub struct NoopKMeans;
+pub struct None;
 
-impl KMeans for NoopKMeans {
+impl Optimizer for None {
     fn step(&self, colors: Vec<FloatColor>, _: &[HistColor]) -> Vec<FloatColor> {
         colors
     }
@@ -48,9 +43,14 @@ impl KMeans for NoopKMeans {
     }
 }
 
-pub struct DefaultKMeans;
+struct KMeansCluster {
+    sum: FloatColor,
+    weight: f64,
+}
 
-impl KMeans for DefaultKMeans {
+pub struct KMeans;
+
+impl Optimizer for KMeans {
     fn step(&self, colors: Vec<FloatColor>, histogram: &[HistColor]) -> Vec<FloatColor> {
         let map = ColorMap::from_float_colors(colors.iter().cloned().collect());
         let mut clusters: Vec<_> = (0..colors.len())
@@ -73,7 +73,7 @@ impl KMeans for DefaultKMeans {
 
 pub struct WeightedKMeans;
 
-impl KMeans for WeightedKMeans {
+impl Optimizer for WeightedKMeans {
     fn step(&self, mut colors: Vec<FloatColor>, histogram: &[HistColor]) -> Vec<FloatColor> {
         let map = ColorMap::from_float_colors(colors.clone());
         let mut clusters: Vec<_> = (0..colors.len())

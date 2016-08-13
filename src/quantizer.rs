@@ -1,8 +1,4 @@
-use ::color::FloatColor;
-use ::color::Color;
-use ::colorspace::ColorSpace;
-use ::kmeans::KMeans;
-use ::colormap::ColorMap;
+use super::*;
 
 #[derive(Clone)]
 pub struct HistColor {
@@ -156,17 +152,17 @@ impl Quantizer {
         self.0.iter().map(|node| colorspace.from_float(node.avg)).collect()
     }
 
-    pub fn do_kmeans_optimization<K>(self, kmeans: &K, num_iterations: usize) -> Quantizer
-        where K: KMeans
+    pub fn optimize<O>(self, optimizer: &O, num_iterations: usize) -> Quantizer
+        where O: Optimizer
     {
-        if kmeans.is_noop() {
+        if optimizer.is_noop() {
             return self;
         }
         let (mut colors, histograms): (Vec<FloatColor>, Vec<Vec<HistColor>>) =
             self.0.into_iter().map(|node| (node.avg, node.histogram)).unzip();
         let histogram: Vec<HistColor> = histograms.iter().flat_map(|h| h.iter().cloned()).collect();
         for _ in 0..num_iterations {
-            colors = kmeans.step(colors, &histogram);
+            colors = optimizer.step(colors, &histogram);
         }
         let mut histograms: Vec<Vec<HistColor>> = (0..colors.len()).map(|_| Vec::new()).collect();
         let map = ColorMap::from_float_colors(colors);
