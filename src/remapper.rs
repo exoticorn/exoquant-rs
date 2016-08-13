@@ -2,6 +2,7 @@ use ::color::Color;
 use ::color::FloatColor;
 use ::colormap::ColorMap;
 use ::colorspace::ColorSpace;
+use std::mem;
 
 pub struct Remapper<'a, T: 'a + ColorSpace, D: 'a + Ditherer> {
     map: ColorMap,
@@ -68,6 +69,41 @@ impl Ditherer for DithererOrdered {
                 let d = map.neighbor_distance(i);
                 let color = color + (d * dither * 0.75);
                 map.find_nearest(color)
+            })
+            .collect()
+    }
+}
+
+pub struct DithererOrdered2;
+const DITHER_MATRIX2: [usize; 4] = [0, 2, 3, 1];
+impl Ditherer for DithererOrdered2 {
+    fn remap<T: ColorSpace>(&self,
+                            map: &ColorMap,
+                            colorspace: &T,
+                            image: &[Color],
+                            width: usize)
+                            -> Vec<usize> {
+        let mut indices = [0usize, 0, 0, 0];
+        image.iter()
+            .enumerate()
+            .map(|(i, c)| {
+                let color: FloatColor = colorspace.to_float(*c);
+                let mut error = FloatColor::default();
+                for j in 0..4 {
+                    let c = colorspace.to_dither(color) + error;
+                    let mut index = map.find_nearest(colorspace.from_dither(c));
+                    error = c - colorspace.to_dither(map.float_color(index));
+                    for k in 0..j {
+                        if indices[k] > index {
+                            mem::swap(&mut index, &mut indices[k]);
+                        }
+                    }
+                    indices[j] = index;
+                }
+                let x = i % width;
+                let y = i / width;
+                let dither = DITHER_MATRIX2[(x & 1) + (y & 1) * 2];
+                indices[dither]
             })
             .collect()
     }

@@ -18,4 +18,5 @@ pub use kmeans::{KMeans, NoopKMeans, DefaultKMeans, WeightedKMeans};
 pub use palettesort::sort_palette;
 pub use quantizer::Quantizer;
 pub use random_sample::{RandomSample, RandomSampleIter};
-pub use remapper::{Remapper, Ditherer, DithererNone, DithererOrdered, DithererFloydSteinberg};
+pub use remapper::{Remapper, Ditherer, DithererNone, DithererOrdered, DithererOrdered2,
+                   DithererFloydSteinberg};
