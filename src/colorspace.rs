@@ -30,16 +30,18 @@ pub trait ColorSpace {
 }
 
 pub struct SimpleColorSpace {
-    gamma: f64,
-    dither_gamma: f64,
-    scale: FloatColor,
+    pub gamma: f64,
+    pub dither_gamma: f64,
+    pub transparency_scale: f64,
+    pub scale: FloatColor,
 }
 
-impl SimpleColorSpace {
-    pub fn default() -> SimpleColorSpace {
+impl Default for SimpleColorSpace {
+    fn default() -> SimpleColorSpace {
         SimpleColorSpace {
             gamma: 1.145,
             dither_gamma: 2.2,
+            transparency_scale: 0.01,
             scale: FloatColor {
                 r: 1.0,
                 g: 1.2,
@@ -52,13 +54,23 @@ impl SimpleColorSpace {
 
 impl ColorSpace for SimpleColorSpace {
     fn to_linear(&self, color: FloatColor) -> FloatColor {
-        color.pow(self.gamma) * self.scale
+        let mut color = color.pow(self.gamma) * self.scale;
+        let f = color.a * (1.0 - self.transparency_scale) + self.transparency_scale;
+        color.r *= f;
+        color.g *= f;
+        color.b *= f;
+        color
     }
 
     fn from_linear(&self, color: FloatColor) -> FloatColor {
         let c = color / self.scale;
         let g = 1.0 / self.gamma;
-        c.pow(g)
+        let mut c = c.pow(g);
+        let f = 1.0 / (color.a * (1.0 - self.transparency_scale) + self.transparency_scale);
+        c.r *= f;
+        c.g *= f;
+        c.b *= f;
+        c
     }
 
     fn to_dither(&self, color: FloatColor) -> FloatColor {
