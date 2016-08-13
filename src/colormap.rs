@@ -1,18 +1,16 @@
-use ::color::Color;
-use ::color::FloatColor;
-use ::colorspace::ColorSpace;
+use super::*;
 
 pub struct ColorMap {
     kdtree: KDNode,
     neighbor_distance: Vec<f64>,
     neighbors: Vec<Vec<usize>>,
-    colors: Vec<FloatColor>,
+    colors: Vec<Colorf>,
 }
 
 struct KDNode {
-    mid_point: FloatColor,
+    mid_point: Colorf,
     index: usize,
-    normal: FloatColor,
+    normal: Colorf,
     left: Option<Box<KDNode>>,
     right: Option<Box<KDNode>>,
 }
@@ -23,10 +21,10 @@ struct KDNearest {
 }
 
 impl KDNode {
-    fn new(mut indices: Vec<usize>, colors: &[FloatColor]) -> KDNode {
+    fn new(mut indices: Vec<usize>, colors: &[Colorf]) -> KDNode {
         assert!(indices.len() > 0);
-        let mut sum = FloatColor::default();
-        let mut sum2 = FloatColor::default();
+        let mut sum = Colorf::zero();
+        let mut sum2 = Colorf::zero();
         for i in &indices {
             let c = colors[*i];
             sum += c;
@@ -34,28 +32,28 @@ impl KDNode {
         }
         let var = sum2 - sum * sum * (1.0 / indices.len() as f64);
         let normal = if var.r > var.g && var.r > var.b && var.r > var.a {
-            FloatColor {
+            Colorf {
                 r: 1.0,
                 g: 0.0,
                 b: 0.0,
                 a: 0.0,
             }
         } else if var.g > var.b && var.g > var.a {
-            FloatColor {
+            Colorf {
                 r: 0.0,
                 g: 1.0,
                 b: 0.0,
                 a: 0.0,
             }
         } else if var.b > var.a {
-            FloatColor {
+            Colorf {
                 r: 0.0,
                 g: 0.0,
                 b: 1.0,
                 a: 0.0,
             }
         } else {
-            FloatColor {
+            Colorf {
                 r: 0.0,
                 g: 0.0,
                 b: 0.0,
@@ -86,7 +84,7 @@ impl KDNode {
     }
 
     fn find_nearest(&self,
-                    needle: FloatColor,
+                    needle: Colorf,
                     mut limit: f64,
                     ignore_index: usize)
                     -> Option<KDNearest> {
@@ -140,7 +138,7 @@ impl KDNode {
     }
 }
 
-fn occludes(origin: FloatColor, occluder: FloatColor, target: FloatColor) -> bool {
+fn occludes(origin: Colorf, occluder: Colorf, target: Colorf) -> bool {
     let dir = occluder - origin;
     dir.dot(&dir) * 0.5 <= (target - origin).dot(&dir)
 }
@@ -151,7 +149,7 @@ impl ColorMap {
         Self::from_float_colors(float_colors)
     }
 
-    pub fn from_float_colors(colors: Vec<FloatColor>) -> ColorMap {
+    pub fn from_float_colors(colors: Vec<Colorf>) -> ColorMap {
         let kdtree = KDNode::new((0..colors.len()).collect(), &colors);
         let neighbor_distance = colors.iter()
             .enumerate()
@@ -184,7 +182,7 @@ impl ColorMap {
         }
     }
 
-    pub fn find_nearest(&self, color: FloatColor) -> usize {
+    pub fn find_nearest(&self, color: Colorf) -> usize {
         if let Some(nearest) = self.kdtree.find_nearest(color, ::std::f64::MAX, ::std::usize::MAX) {
             nearest.index
         } else {
@@ -200,7 +198,7 @@ impl ColorMap {
         &self.neighbors[index]
     }
 
-    pub fn float_color(&self, index: usize) -> FloatColor {
+    pub fn float_color(&self, index: usize) -> Colorf {
         self.colors[index]
     }
 }

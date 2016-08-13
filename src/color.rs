@@ -1,40 +1,43 @@
 use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div};
 
 #[derive(Copy,Clone,Eq,PartialEq,Hash)]
-pub struct Color(pub u32);
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}
 
 impl Color {
-    pub fn rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
-        Color((r as u32) | ((g as u32) << 8) | ((b as u32) << 16) | ((a as u32) << 24))
-    }
-
-    pub fn r(&self) -> u8 {
-        (self.0 & 255) as u8
-    }
-
-    pub fn g(&self) -> u8 {
-        ((self.0 >> 8) & 255) as u8
-    }
-
-    pub fn b(&self) -> u8 {
-        ((self.0 >> 16) & 255) as u8
-    }
-
-    pub fn a(&self) -> u8 {
-        ((self.0 >> 24) & 255) as u8
+    pub fn new(r: u8, g: u8, b: u8, a: u8) -> Color {
+        Color {
+            r: r,
+            g: g,
+            b: b,
+            a: a,
+        }
     }
 }
 
 #[derive(Default, Copy, Clone)]
-pub struct FloatColor {
+pub struct Colorf {
     pub r: f64,
     pub g: f64,
     pub b: f64,
     pub a: f64,
 }
 
-impl FloatColor {
-    pub fn dot(&self, rhs: &FloatColor) -> f64 {
+impl Colorf {
+    pub fn zero() -> Colorf {
+        Colorf {
+            r: 0.,
+            g: 0.,
+            b: 0.,
+            a: 0.,
+        }
+    }
+
+    pub fn dot(&self, rhs: &Colorf) -> f64 {
         self.r * rhs.r + self.g * rhs.g + self.b * rhs.b + self.a * rhs.a
     }
 
@@ -42,8 +45,8 @@ impl FloatColor {
         self.dot(self).sqrt()
     }
 
-    pub fn pow(&self, e: f64) -> FloatColor {
-        FloatColor {
+    pub fn pow(&self, e: f64) -> Colorf {
+        Colorf {
             r: self.r.max(0.0).powf(e),
             g: self.g.max(0.0).powf(e),
             b: self.b.max(0.0).powf(e),
@@ -52,10 +55,10 @@ impl FloatColor {
     }
 }
 
-impl Add for FloatColor {
-    type Output = FloatColor;
-    fn add(self, rhs: FloatColor) -> FloatColor {
-        FloatColor {
+impl Add for Colorf {
+    type Output = Colorf;
+    fn add(self, rhs: Colorf) -> Colorf {
+        Colorf {
             r: self.r + rhs.r,
             g: self.g + rhs.g,
             b: self.b + rhs.b,
@@ -64,10 +67,10 @@ impl Add for FloatColor {
     }
 }
 
-impl Add<f64> for FloatColor {
-    type Output = FloatColor;
-    fn add(self, rhs: f64) -> FloatColor {
-        FloatColor {
+impl Add<f64> for Colorf {
+    type Output = Colorf;
+    fn add(self, rhs: f64) -> Colorf {
+        Colorf {
             r: self.r + rhs,
             g: self.g + rhs,
             b: self.b + rhs,
@@ -76,8 +79,8 @@ impl Add<f64> for FloatColor {
     }
 }
 
-impl AddAssign for FloatColor {
-    fn add_assign(&mut self, rhs: FloatColor) {
+impl AddAssign for Colorf {
+    fn add_assign(&mut self, rhs: Colorf) {
         self.r += rhs.r;
         self.g += rhs.g;
         self.b += rhs.b;
@@ -85,10 +88,10 @@ impl AddAssign for FloatColor {
     }
 }
 
-impl Sub for FloatColor {
-    type Output = FloatColor;
-    fn sub(self, rhs: FloatColor) -> FloatColor {
-        FloatColor {
+impl Sub for Colorf {
+    type Output = Colorf;
+    fn sub(self, rhs: Colorf) -> Colorf {
+        Colorf {
             r: self.r - rhs.r,
             g: self.g - rhs.g,
             b: self.b - rhs.b,
@@ -97,10 +100,10 @@ impl Sub for FloatColor {
     }
 }
 
-impl Mul<f64> for FloatColor {
-    type Output = FloatColor;
-    fn mul(self, rhs: f64) -> FloatColor {
-        FloatColor {
+impl Mul<f64> for Colorf {
+    type Output = Colorf;
+    fn mul(self, rhs: f64) -> Colorf {
+        Colorf {
             r: self.r * rhs,
             g: self.g * rhs,
             b: self.b * rhs,
@@ -109,7 +112,7 @@ impl Mul<f64> for FloatColor {
     }
 }
 
-impl MulAssign<f64> for FloatColor {
+impl MulAssign<f64> for Colorf {
     fn mul_assign(&mut self, rhs: f64) {
         self.r *= rhs;
         self.g *= rhs;
@@ -118,10 +121,10 @@ impl MulAssign<f64> for FloatColor {
     }
 }
 
-impl Mul for FloatColor {
-    type Output = FloatColor;
-    fn mul(self, rhs: FloatColor) -> FloatColor {
-        FloatColor {
+impl Mul for Colorf {
+    type Output = Colorf;
+    fn mul(self, rhs: Colorf) -> Colorf {
+        Colorf {
             r: self.r * rhs.r,
             g: self.g * rhs.g,
             b: self.b * rhs.b,
@@ -130,10 +133,10 @@ impl Mul for FloatColor {
     }
 }
 
-impl Div for FloatColor {
-    type Output = FloatColor;
-    fn div(self, rhs: FloatColor) -> FloatColor {
-        FloatColor {
+impl Div for Colorf {
+    type Output = Colorf;
+    fn div(self, rhs: Colorf) -> Colorf {
+        Colorf {
             r: self.r / rhs.r,
             g: self.g / rhs.g,
             b: self.b / rhs.b,

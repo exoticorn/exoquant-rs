@@ -2,10 +2,15 @@ use std::collections::HashMap;
 use std::iter::{FromIterator, IntoIterator};
 
 use super::*;
-use super::quantizer::HistColor;
 
 pub struct Histogram {
     data: HashMap<Color, usize>,
+}
+
+#[derive(Clone)]
+pub struct ColorCount {
+    pub color: Colorf,
+    pub count: usize,
 }
 
 impl Histogram {
@@ -13,11 +18,11 @@ impl Histogram {
         Histogram { data: HashMap::new() }
     }
 
-    pub fn to_hist_colors<T: ColorSpace>(&self, colorspace: &T) -> Vec<HistColor> {
+    pub fn to_color_counts<T: ColorSpace>(&self, colorspace: &T) -> Vec<ColorCount> {
         self.data
             .iter()
             .map(|(color, count)| {
-                HistColor {
+                ColorCount {
                     color: colorspace.to_float(*color),
                     count: *count,
                 }
@@ -53,14 +58,13 @@ impl FromIterator<Color> for Histogram {
 
 #[cfg(test)]
 mod tests {
-    use ::Color;
+    use super::super::*;
 
     #[test]
     fn count_duplicates() {
-        let mut hist = super::Histogram::new();
-        hist.extend([0xaabbccffu32, 0x00ff00ff, 0x330088ff, 0x00ff00ff]
-            .iter()
-            .map(|c| Color(*c)));
-        assert_eq!(*hist.data.get(&Color(0x00ff00ff)).unwrap(), 2usize);
+        let mut hist: Histogram =
+            [Color::new(10, 20, 30, 99), Color::new(0, 99, 0, 99)].iter().cloned().collect();
+        hist.extend([Color::new(20, 0, 40, 99), Color::new(0, 99, 0, 99)].iter().cloned());
+        assert_eq!(*hist.data.get(&Color::new(0, 99, 0, 99)).unwrap(), 2usize);
     }
 }

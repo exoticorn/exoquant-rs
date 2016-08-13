@@ -1,13 +1,8 @@
-use ::color::FloatColor;
-use ::color::Color;
-use ::quantizer::HistColor;
-use ::colormap::ColorMap;
-use ::histogram::Histogram;
-use ::colorspace::ColorSpace;
+use super::*;
 use std::f64;
 
 pub trait Optimizer {
-    fn step(&self, colors: Vec<FloatColor>, histogram: &[HistColor]) -> Vec<FloatColor>;
+    fn step(&self, colors: Vec<Colorf>, histogram: &[ColorCount]) -> Vec<Colorf>;
 
     fn optimize_palette<C: ColorSpace>(&self,
                                        colorspace: &C,
@@ -18,7 +13,7 @@ pub trait Optimizer {
         if self.is_noop() {
             return palette.iter().cloned().collect();
         }
-        let hist = histogram.to_hist_colors(colorspace);
+        let hist = histogram.to_color_counts(colorspace);
         let mut colors = palette.iter().map(|c| colorspace.to_float(*c)).collect();
         for _ in 0..num_iterations {
             colors = self.step(colors, &hist);
@@ -34,7 +29,7 @@ pub trait Optimizer {
 pub struct None;
 
 impl Optimizer for None {
-    fn step(&self, colors: Vec<FloatColor>, _: &[HistColor]) -> Vec<FloatColor> {
+    fn step(&self, colors: Vec<Colorf>, _: &[ColorCount]) -> Vec<Colorf> {
         colors
     }
 
@@ -44,19 +39,19 @@ impl Optimizer for None {
 }
 
 struct KMeansCluster {
-    sum: FloatColor,
+    sum: Colorf,
     weight: f64,
 }
 
 pub struct KMeans;
 
 impl Optimizer for KMeans {
-    fn step(&self, colors: Vec<FloatColor>, histogram: &[HistColor]) -> Vec<FloatColor> {
+    fn step(&self, colors: Vec<Colorf>, histogram: &[ColorCount]) -> Vec<Colorf> {
         let map = ColorMap::from_float_colors(colors.iter().cloned().collect());
         let mut clusters: Vec<_> = (0..colors.len())
             .map(|_| {
                 KMeansCluster {
-                    sum: FloatColor::default(),
+                    sum: Colorf::zero(),
                     weight: 0.0,
                 }
             })
@@ -74,12 +69,12 @@ impl Optimizer for KMeans {
 pub struct WeightedKMeans;
 
 impl Optimizer for WeightedKMeans {
-    fn step(&self, mut colors: Vec<FloatColor>, histogram: &[HistColor]) -> Vec<FloatColor> {
+    fn step(&self, mut colors: Vec<Colorf>, histogram: &[ColorCount]) -> Vec<Colorf> {
         let map = ColorMap::from_float_colors(colors.clone());
         let mut clusters: Vec<_> = (0..colors.len())
             .map(|_| {
                 KMeansCluster {
-                    sum: FloatColor::default(),
+                    sum: Colorf::zero(),
                     weight: 0.0,
                 }
             })
@@ -87,7 +82,7 @@ impl Optimizer for WeightedKMeans {
         for entry in histogram {
             let index = map.find_nearest(entry.color);
             let neighbors = map.neighbors(index);
-            let mut error_sum = FloatColor::default();
+            let mut error_sum = Colorf::zero();
             let mut color = entry.color;
             for _ in 0..4 {
                 let mut best_i = 0;
@@ -114,7 +109,7 @@ impl Optimizer for WeightedKMeans {
             if cluster.weight > 0.0 {
                 colors[i] = cluster.sum * (1.0 / cluster.weight);
             }
-            cluster.sum = FloatColor::default();
+            cluster.sum = Colorf::zero();
             cluster.weight = 0.0;
         }
         colors

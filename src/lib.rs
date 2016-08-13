@@ -10,10 +10,10 @@ mod basicapi;
 mod random_sample;
 
 pub use basicapi::{convert_to_indexed, generate_palette};
-pub use color::{Color, FloatColor};
+pub use color::*;
 pub use colormap::ColorMap;
 pub use colorspace::{ColorSpace, SimpleColorSpace};
-pub use histogram::Histogram;
+pub use histogram::*;
 pub use optimizer::Optimizer;
 pub use palettesort::sort_palette;
 pub use quantizer::Quantizer;

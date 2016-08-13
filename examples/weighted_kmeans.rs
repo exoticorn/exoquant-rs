@@ -9,13 +9,13 @@ use std::fs::File;
 use std::io::Write;
 
 fn render_palette(colors: &[Color]) -> Fig {
-    let dots = colors.iter().map(|&c| Fig::Circle(c.r() as f32, c.g() as f32, 4.)).collect();
+    let dots = colors.iter().map(|&c| Fig::Circle(c.r as f32, c.g as f32, 4.)).collect();
     Fig::Multiple(dots).styled(Attr::default().fill(ColorNone).stroke(ColorSvg(0, 128, 0)))
 }
 
 fn render_histogram(hist: &Histogram) -> Fig {
     let dots = hist.iter()
-        .map(|(&col, &cnt)| Fig::Circle(col.r() as f32, col.g() as f32, (cnt as f32).sqrt()))
+        .map(|(&col, &cnt)| Fig::Circle(col.r as f32, col.g as f32, (cnt as f32).sqrt()))
         .collect();
     Fig::Multiple(dots)
 }
@@ -29,12 +29,7 @@ fn render_box(hist: &Histogram, palette: &[Color]) -> Fig {
 fn main() {
     let (image, width, height) = png::load("baboon.png");
     let image: Vec<_> = image.iter()
-        .map(|&c| {
-            Color::rgba(c.r(),
-                        c.b(),
-                        ((c.r() as u32 + c.g() as u32) / 2) as u8,
-                        c.a())
-        })
+        .map(|&c| Color::new(c.r, c.b, ((c.r as u32 + c.g as u32) / 2) as u8, c.a))
         .collect();
 
     let ditherer = DithererFloydSteinberg::new();

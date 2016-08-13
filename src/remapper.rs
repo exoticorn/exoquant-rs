@@ -1,7 +1,4 @@
-use ::color::Color;
-use ::color::FloatColor;
-use ::colormap::ColorMap;
-use ::colorspace::ColorSpace;
+use super::*;
 use std::mem;
 
 pub struct Remapper<'a, T: 'a + ColorSpace, D: 'a + Ditherer> {
@@ -64,7 +61,7 @@ impl Ditherer for DithererOrdered {
                 let x = i % width;
                 let y = i / width;
                 let dither = DITHER_MATRIX[(x & 1) + (y & 1) * 2];
-                let color: FloatColor = colorspace.to_float(*c);
+                let color: Colorf = colorspace.to_float(*c);
                 let i = map.find_nearest(color);
                 let d = map.neighbor_distance(i);
                 let color = color + (d * dither * 0.75);
@@ -87,8 +84,8 @@ impl Ditherer for DithererOrdered2 {
         image.iter()
             .enumerate()
             .map(|(i, c)| {
-                let color: FloatColor = colorspace.to_float(*c);
-                let mut error = FloatColor::default();
+                let color: Colorf = colorspace.to_float(*c);
+                let mut error = Colorf::zero();
                 for j in 0..4 {
                     let c = colorspace.to_dither(color) + error;
                     let mut index = map.find_nearest(colorspace.from_dither(c));
@@ -125,7 +122,7 @@ impl Ditherer for DithererFloydSteinberg {
                             image: &[Color],
                             width: usize)
                             -> Vec<usize> {
-        let mut errors: Vec<_> = (0..(width * 2)).map(|_| FloatColor::default()).collect();
+        let mut errors: Vec<_> = (0..(width * 2)).map(|_| Colorf::zero()).collect();
         image.iter()
             .enumerate()
             .map(|(i, c)| {
