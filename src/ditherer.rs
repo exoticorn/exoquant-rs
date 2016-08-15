@@ -1,48 +1,45 @@
 use super::*;
 
 pub trait Ditherer {
-    fn remap(&self,
-             map: &ColorMap,
-             colorspace: &ColorSpace,
-             image: &[Color],
-             width: usize)
-             -> Vec<usize>;
+    fn remap<'a>(&'a self,
+                 image: Box<Iterator<Item = Colorf> + 'a>,
+                 width: usize,
+                 map: &'a ColorMap,
+                 colorspace: &'a ColorSpace)
+                 -> Box<Iterator<Item = usize> + 'a>;
 }
 
 pub struct None;
 impl Ditherer for None {
-    fn remap(&self,
-             map: &ColorMap,
-             colorspace: &ColorSpace,
-             image: &[Color],
-             _: usize)
-             -> Vec<usize> {
-        image.iter().map(|&c| map.find_nearest(colorspace.to_float(c))).collect()
+    fn remap<'a>(&'a self,
+                 image: Box<Iterator<Item = Colorf> + 'a>,
+                 _: usize,
+                 map: &'a ColorMap,
+                 _: &'a ColorSpace)
+                 -> Box<Iterator<Item = usize> + 'a> {
+        Box::new(image.map(move |c| map.find_nearest(c)))
     }
 }
 
 pub struct Ordered;
 const DITHER_MATRIX: [f64; 4] = [-0.375, 0.125, 0.375, -0.125];
 impl Ditherer for Ordered {
-    fn remap(&self,
-             map: &ColorMap,
-             colorspace: &ColorSpace,
-             image: &[Color],
-             width: usize)
-             -> Vec<usize> {
-        image.iter()
-            .enumerate()
-            .map(|(i, &c)| {
+    fn remap<'a>(&'a self,
+                 image: Box<Iterator<Item = Colorf> + 'a>,
+                 width: usize,
+                 map: &'a ColorMap,
+                 _: &'a ColorSpace)
+                 -> Box<Iterator<Item = usize> + 'a> {
+        Box::new(image.enumerate()
+            .map(move |(i, color)| {
                 let x = i % width;
                 let y = i / width;
-                let color = colorspace.to_float(c);
                 let dither = DITHER_MATRIX[(x & 1) + (y & 1) * 2];
                 let i = map.find_nearest(color);
                 let d = map.neighbor_distance(i);
                 let color = color + (d * dither * 0.75);
                 map.find_nearest(color)
-            })
-            .collect()
+            }))
     }
 }
 
@@ -51,24 +48,25 @@ impl FloydSteinberg {
     pub fn new() -> FloydSteinberg {
         FloydSteinberg(7.0 / 16.0, 3.0 / 16.0, 5.0 / 16.0, 1.0 / 16.0, 0.8)
     }
+    pub fn vanilla() -> FloydSteinberg {
+        FloydSteinberg(7.0 / 16.0, 3.0 / 16.0, 5.0 / 16.0, 1.0 / 16.0, 1.0)
+    }
     pub fn checkered() -> FloydSteinberg {
         FloydSteinberg(7.0 / 16.0, 1.5 / 16.0, 6.5 / 16.0, 1.0 / 16.0, 0.5)
     }
 }
 impl Ditherer for FloydSteinberg {
-    fn remap(&self,
-             map: &ColorMap,
-             colorspace: &ColorSpace,
-             image: &[Color],
-             width: usize)
-             -> Vec<usize> {
+    fn remap<'a>(&'a self,
+                 image: Box<Iterator<Item = Colorf> + 'a>,
+                 width: usize,
+                 map: &'a ColorMap,
+                 colorspace: &'a ColorSpace)
+                 -> Box<Iterator<Item = usize> + 'a> {
         let mut errors: Vec<Colorf> = (0..width * 2).map(|_| Colorf::zero()).collect();
-        image.iter()
-            .enumerate()
-            .map(|(i, &c)| {
+        Box::new(image.enumerate()
+            .map(move |(i, c)| {
                 let x = i % width;
                 let y = i / width;
-                let c = colorspace.to_float(c);
                 let y = y & 1;
                 let row = y * width;
                 let other = (y ^ 1) * width;
@@ -81,7 +79,6 @@ impl Ditherer for FloydSteinberg {
                 errors[other + x] += error * self.2;
                 errors[other + (x + width - 1) % width] += error * self.1;
                 index
-            })
-            .collect()
+            }))
     }
 }

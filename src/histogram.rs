@@ -18,7 +18,7 @@ impl Histogram {
         Histogram { data: HashMap::new() }
     }
 
-    pub fn to_color_counts<T: ColorSpace>(&self, colorspace: &T) -> Vec<ColorCount> {
+    pub fn to_color_counts(&self, colorspace: &ColorSpace) -> Vec<ColorCount> {
         self.data
             .iter()
             .map(|(color, count)| {

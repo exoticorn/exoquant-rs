@@ -4,12 +4,12 @@ use std::f64;
 pub trait Optimizer {
     fn step(&self, colors: Vec<Colorf>, histogram: &[ColorCount]) -> Vec<Colorf>;
 
-    fn optimize_palette<C: ColorSpace>(&self,
-                                       colorspace: &C,
-                                       palette: &[Color],
-                                       histogram: &Histogram,
-                                       num_iterations: usize)
-                                       -> Vec<Color> {
+    fn optimize_palette(&self,
+                        colorspace: &ColorSpace,
+                        palette: &[Color],
+                        histogram: &Histogram,
+                        num_iterations: usize)
+                        -> Vec<Color> {
         if self.is_noop() {
             return palette.iter().cloned().collect();
         }

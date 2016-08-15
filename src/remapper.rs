@@ -16,11 +16,22 @@ impl<'a, T: ColorSpace, D: Ditherer + ?Sized> Remapper<'a, T, D> {
     }
 
     pub fn remap_usize(&self, image: &[Color], width: usize) -> Vec<usize> {
-        self.ditherer.remap(&self.map, self.colorspace, image, width)
+        self.ditherer
+            .remap(Box::new(image.iter().map(|&c| self.colorspace.to_float(c))),
+                   width,
+                   &self.map,
+                   self.colorspace)
+            .collect()
     }
 
     pub fn remap(&self, image: &[Color], width: usize) -> Vec<u8> {
         assert!(self.map.num_colors() <= 256);
-        self.remap_usize(image, width).iter().map(|i| *i as u8).collect()
+        self.ditherer
+            .remap(Box::new(image.iter().map(|&c| self.colorspace.to_float(c))),
+                   width,
+                   &self.map,
+                   self.colorspace)
+            .map(|i| i as u8)
+            .collect()
     }
 }
