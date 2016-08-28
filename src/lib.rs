@@ -9,6 +9,8 @@ mod palettesort;
 mod basicapi;
 pub mod random_sample;
 pub mod ditherer;
+#[doc(hidden)]
+pub mod testdata;
 
 pub use basicapi::{convert_to_indexed, generate_palette};
 pub use color::*;

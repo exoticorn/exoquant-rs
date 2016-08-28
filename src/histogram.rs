@@ -3,10 +3,38 @@ use std::iter::{FromIterator, IntoIterator};
 
 use super::*;
 
+/// A histogram that counts the number of times each color occurs in the input image data.
+///
+/// The Histogram is used to describe the color distribution of the input image to the
+/// quantization process. Histogram implements both `Extend<Color>` and `FromIterator<Color>`,
+/// so you can either create an empty instance using `Histogram::new()` and fill it width
+/// `histogram.extend(iter)`, or just create from an `Iterator<Color>` using `iter.collect()`.
+///
+/// The `Histogram::new()`, `histogram.extend(...)` method is useful when you want to create
+/// one palette for multiple distinct images, multiple frames of a GIF animation, etc.
+///
+/// # Examples
+/// ```
+/// # use exoquant::*;
+/// # let image = testdata::test_image();
+/// let mut histogram = Histogram::new();
+/// histogram.extend(image.pixels.iter().cloned());
+/// ```
+///
+/// ```
+/// # use exoquant::*;
+/// # let image = testdata::test_image();
+/// let histogram: Histogram = image.pixels.iter().cloned().collect();
+/// ```
 pub struct Histogram {
     data: HashMap<Color, usize>,
 }
 
+/// A single float color in quantization color space with the number of times it occurs in the
+/// input image data.
+///
+/// This type is used to hold histogram data during the actual quantization process. It's mostly
+/// used internally.
 #[derive(Clone)]
 pub struct ColorCount {
     pub color: Colorf,
@@ -14,10 +42,14 @@ pub struct ColorCount {
 }
 
 impl Histogram {
+    /// Returns a new, empty `Histogram`.
     pub fn new() -> Histogram {
         Histogram { data: HashMap::new() }
     }
 
+    /// Converts the rgba8 `Histogram` to a Vec of `ColorCount` in quantization color space.
+    ///
+    /// Mostly used internally.
     pub fn to_color_counts(&self, colorspace: &ColorSpace) -> Vec<ColorCount> {
         self.data
             .iter()
@@ -30,6 +62,7 @@ impl Histogram {
             .collect()
     }
 
+    /// Returns an iterator over the histogram data.
     pub fn iter<'a>(&'a self) -> Box<Iterator<Item = (&Color, &usize)> + 'a> {
         Box::new(self.data.iter())
     }

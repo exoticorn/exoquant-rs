@@ -1,5 +1,6 @@
 use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div};
 
+/// A RGBA8 color used for both the input image data and the palette output.
 #[derive(Copy,Clone,Eq,PartialEq,Hash)]
 pub struct Color {
     pub r: u8,
@@ -9,6 +10,7 @@ pub struct Color {
 }
 
 impl Color {
+    /// Creates a new `Color` from the given channel components.
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Color {
         Color {
             r: r,
@@ -19,6 +21,12 @@ impl Color {
     }
 }
 
+/// A color with floating point channel components.
+///
+/// Used for all internal processing.
+///
+/// It implements `Mul`, `Div`, `Add` and `Sub` operators that apply each operation component
+/// wise to each channel in turn.
 #[derive(Default, Copy, Clone)]
 pub struct Colorf {
     pub r: f64,
@@ -28,6 +36,7 @@ pub struct Colorf {
 }
 
 impl Colorf {
+    /// Returns a `Colorf` with all channel components set to zero.
     pub fn zero() -> Colorf {
         Colorf {
             r: 0.,
@@ -37,14 +46,17 @@ impl Colorf {
         }
     }
 
+    /// Returns the dot product of two `Colorf`s.
     pub fn dot(&self, rhs: &Colorf) -> f64 {
         self.r * rhs.r + self.g * rhs.g + self.b * rhs.b + self.a * rhs.a
     }
 
+    /// Returns the magnitude (vector length) of a `Colorf`.
     pub fn abs(&self) -> f64 {
         self.dot(self).sqrt()
     }
 
+    /// Returns a new `Colorf` with each color component raised to the given power.
     pub fn pow(&self, e: f64) -> Colorf {
         Colorf {
             r: self.r.max(0.0).powf(e),
