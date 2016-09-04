@@ -8,6 +8,15 @@ Floyd-Steinberg and ordered ditherers.
 This version of the library is a much improved rewrite of a C library of the same name written
 back in 2004.
 
+# Usage
+
+Add exoquant as a dependency to your Cargo.toml:
+
+```toml
+[dependencies]
+exoquant = "0.2.0"
+```
+
 # Basic API:
 For simple use cases, there is a convenience function that simply takes true color
 image data + a few options as input and returns the palette and indexed image data as
@@ -60,3 +69,7 @@ let ditherer = ditherer::FloydSteinberg::new();
 let remapper = Remapper::new(&palette, &colorspace, &ditherer);
 let indexed_data = remapper.remap(&image.pixels, image.width);
 ```
+
+# API Documentation
+
+[Click here for a online version of the API Documenation](https://exoticorn.github.io/exoquant-rs/exoquant/)
