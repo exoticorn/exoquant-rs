@@ -1,6 +1,6 @@
 [package]
 name = "exoquant"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Dennis Ranke <dennis.ranke@gmail.com>"]
 description = "Very high quality image quantization"
 keywords = ["quantization", "palette"]
