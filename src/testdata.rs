@@ -9,7 +9,11 @@ pub struct TestImage {
 pub fn test_image() -> TestImage {
     TestImage {
         pixels: (0..65536)
-            .map(|_| Color::new(0, 0, 0, 255))
+            .map(|i| {
+                let x = i & 255;
+                let y = i >> 8;
+                Color::new(x as u8, y as u8, 0, 255)
+            })
             .collect(),
         width: 256,
         height: 256,

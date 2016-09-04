@@ -56,11 +56,7 @@ impl QuantizerNode {
 
         dir *= {
             let s = dir.dot(&dir).sqrt();
-            if s < 0.000000001 {
-                1.0
-            } else {
-                1.0 / s
-            }
+            if s < 0.000000001 { 1.0 } else { 1.0 / s }
         };
 
         // Now sort histogram by primary vector
@@ -98,14 +94,51 @@ impl QuantizerNode {
     }
 }
 
+/// The main color quantizer state.
+///
+/// The Quantizer is used to find a palette of colors that represent the colors in an input
+/// Histogram as well as possible.
+///
+/// To use it you first create a new Quantizer instance using `Quantizer::new`, then call
+/// `quantizer.step()` until `quantizer.num_colors()` reaches your target color count, then
+/// call `quantizer.colors()` to get your final palette `Vec` of `Color`s.
+///
+/// Optionally you can call `quantizer.optimize()` between calls to `quantizer.step()` to
+/// run K-Means optimizations during quantization.
+///
+/// If you don't intend to do K-Means optimzations during quantization, you can also just
+/// use the shortcut function `Quantizer::create_palette`.
+///
+/// # Examples
+/// ```
+/// # use exoquant::*;
+/// # let image = testdata::test_image();
+/// # let histogram: Histogram = image.pixels.iter().cloned().collect();
+/// # let colorspace = SimpleColorSpace::default();
+/// let mut quantizer = Quantizer::new(&histogram, &colorspace);
+/// while quantizer.num_colors() < 256 {
+///   quantizer.step();
+/// }
+/// let palette = quantizer.colors(&colorspace);
+/// ```
+///
+/// ```
+/// # use exoquant::*;
+/// # let image = testdata::test_image();
+/// # let histogram: Histogram = image.pixels.iter().cloned().collect();
+/// # let colorspace = SimpleColorSpace::default();
+/// let palette = Quantizer::create_palette(&histogram, &colorspace, 256);
+/// ```
 pub struct Quantizer(Vec<QuantizerNode>);
 
 impl Quantizer {
+    /// Create a new Quantizer state for the given histogram.
     pub fn new<T: ColorSpace>(histogram: &::histogram::Histogram, colorspace: &T) -> Quantizer {
         let hist = histogram.to_color_counts(colorspace);
         Quantizer(vec![QuantizerNode::new(hist)])
     }
 
+    /// A shortcut function to directly create a palette from a histogram.
     pub fn create_palette<T: ColorSpace>(histogram: &::histogram::Histogram,
                                          colorspace: &T,
                                          num_colors: usize)
@@ -117,10 +150,14 @@ impl Quantizer {
         quantizer.colors(colorspace)
     }
 
+    /// Returns the current number of colors in this Quantizer state.
+    ///
+    /// This starts off at 1 and increases by 1 for each call to `quantizer.step()`.
     pub fn num_colors(&self) -> usize {
         self.0.len()
     }
 
+    /// Run one quantization step which increases the `num_colors()` by one.
     pub fn step(&mut self) {
         let (new_node1, new_node2) = {
             let node = {
@@ -142,10 +179,34 @@ impl Quantizer {
         self.0.push(new_node2);
     }
 
+    /// Returns colors the current Quantizer state represents..
     pub fn colors<T: ColorSpace>(&self, colorspace: &T) -> Vec<Color> {
         self.0.iter().map(|node| colorspace.from_float(node.avg)).collect()
     }
 
+    /// Run a number of K-Means iteration on the current quantizer state.
+    ///
+    /// This can improve the quality of the final palette by a certain amount,
+    /// but note that this is a fairly expensive operation. You might find it
+    /// sufficient to only run optimizations on the final palette, in which case
+    /// `optimizer.optimize_palette` is slightly less expensive.
+    ///
+    /// # Examples
+    /// ```
+    /// # use exoquant::*;
+    /// # let image = testdata::test_image();
+    /// # let histogram: Histogram = image.pixels.iter().cloned().collect();
+    /// # let colorspace = SimpleColorSpace::default();
+    /// let optimizer = optimizer::KMeans;
+    /// let mut quantizer = Quantizer::new(&histogram, &colorspace);
+    /// while quantizer.num_colors() < 256 {
+    ///   quantizer.step();
+    ///   if quantizer.num_colors() % 32 == 0 {
+    ///     quantizer = quantizer.optimize(&optimizer, 4);
+    ///   }
+    /// }
+    /// let palette = quantizer.colors(&colorspace);
+    /// ```
     pub fn optimize<O>(self, optimizer: &O, num_iterations: usize) -> Quantizer
         where O: Optimizer
     {

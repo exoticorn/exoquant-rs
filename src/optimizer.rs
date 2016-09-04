@@ -1,9 +1,25 @@
 use super::*;
 use std::f64;
 
+/// An interface for K-Means optimizers.
 pub trait Optimizer {
+    /// Do one K-Means optimization step and return colors that better represent the histogram.
+    ///
+    /// This is the one function custom implementations have to provide.
     fn step(&self, colors: Vec<Colorf>, histogram: &[ColorCount]) -> Vec<Colorf>;
 
+    /// Optimize a given palette with a number of K-Means iteration.
+    ///
+    /// # Examples:
+    /// ```
+    /// # use exoquant::*;
+    /// # let image = testdata::test_image();
+    /// # let histogram: Histogram = image.pixels.iter().cloned().collect();
+    /// # let colorspace = SimpleColorSpace::default();
+    /// let palette = Quantizer::create_palette(&histogram, &colorspace, 256);
+    /// let palette = optimizer::KMeans.optimize_palette(&colorspace, &palette,
+    ///   &histogram, 16);
+    /// ```
     fn optimize_palette(&self,
                         colorspace: &ColorSpace,
                         palette: &[Color],
@@ -21,11 +37,16 @@ pub trait Optimizer {
         colors.iter().map(|&c| colorspace.from_float(c)).collect()
     }
 
+    /// Returns whether this Optimizer is a No-op implementation.
+    ///
+    /// This is used to shortcut some functions that take an Optimizer as a paramter if
+    /// the Optimizer won't do anything anyway.
     fn is_noop(&self) -> bool {
         false
     }
 }
 
+/// A No-op Optimizer implementation.
 pub struct None;
 
 impl Optimizer for None {
@@ -43,6 +64,10 @@ struct KMeansCluster {
     weight: f64,
 }
 
+/// A standard K-Means Optimizer.
+///
+/// Each palette entry is moved toward the average of the cluster of input colors it is
+/// going to represent to find a locally optimal palette.
 pub struct KMeans;
 
 impl Optimizer for KMeans {
@@ -62,10 +87,18 @@ impl Optimizer for KMeans {
             cluster.sum += entry.color * entry.count as f64;
             cluster.weight += entry.count as f64;
         }
-        clusters.iter().map(|cluster| cluster.sum * (1.0 / cluster.weight)).collect()
+        clusters.iter()
+            .map(|cluster| cluster.sum * (1.0 / cluster.weight.max(1.0)))
+            .collect()
     }
 }
 
+/// A slightly experimental Optimizer that improves color representation in dithered images.
+///
+/// The standard K-Means optimization produces palettes that can't represent the extrema of the
+/// input colors, even with dithering. This optimizer tries to optimize the representation of
+/// these fringe colors. This does increase the dithering noise a bit and is only really
+/// useful for low target color counts (say <= 64).
 pub struct WeightedKMeans;
 
 impl Optimizer for WeightedKMeans {

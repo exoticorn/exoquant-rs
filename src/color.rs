@@ -27,7 +27,7 @@ impl Color {
 ///
 /// It implements `Mul`, `Div`, `Add` and `Sub` operators that apply each operation component
 /// wise to each channel in turn.
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug)]
 pub struct Colorf {
     pub r: f64,
     pub g: f64,

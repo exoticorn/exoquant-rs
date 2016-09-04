@@ -1,5 +1,11 @@
 use super::*;
 
+/// Defines the colorspaces in which to do quantization and remapping
+///
+/// The current implementation is subject to change. Just use
+/// `SimpleColorSpace::default()` for now wherever a ColorSpace parameter
+/// is required..
+
 pub trait ColorSpace {
     fn to_linear(&self, color: Colorf) -> Colorf;
     fn from_linear(&self, color: Colorf) -> Colorf;
@@ -27,6 +33,8 @@ pub trait ColorSpace {
                    (c.a * 255.0).max(0.0).min(255.0) as u8)
     }
 }
+
+/// The default colorspace implementation.
 
 pub struct SimpleColorSpace {
     pub gamma: f64,

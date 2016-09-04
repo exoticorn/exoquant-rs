@@ -1,5 +1,6 @@
 use super::*;
 
+/// A data structure for fast nearest color lookups in a palette.
 pub struct ColorMap {
     kdtree: KDNode,
     neighbor_distance: Vec<f64>,
@@ -144,11 +145,13 @@ fn occludes(origin: Colorf, occluder: Colorf, target: Colorf) -> bool {
 }
 
 impl ColorMap {
+    /// Create a `ColorMap` from a slice of `Color`s.
     pub fn new<T: ColorSpace>(colors: &[Color], colorspace: &T) -> ColorMap {
         let float_colors: Vec<_> = colors.iter().map(|c| colorspace.to_float(*c)).collect();
         Self::from_float_colors(float_colors)
     }
 
+    /// Create a `ColorMap` from float colors.
     pub fn from_float_colors(colors: Vec<Colorf>) -> ColorMap {
         let kdtree = KDNode::new((0..colors.len()).collect(), &colors);
         let neighbor_distance = colors.iter()
@@ -182,6 +185,7 @@ impl ColorMap {
         }
     }
 
+    /// Returns the index of the nearest color in the palette.
     pub fn find_nearest(&self, color: Colorf) -> usize {
         if let Some(nearest) = self.kdtree.find_nearest(color, ::std::f64::MAX, ::std::usize::MAX) {
             nearest.index
@@ -190,18 +194,22 @@ impl ColorMap {
         }
     }
 
+    /// Returns the distance to the closest neighbor color of a palette entry given by index.
     pub fn neighbor_distance(&self, index: usize) -> f64 {
         self.neighbor_distance[index]
     }
 
+    /// Returns the list of neighbors (as indices) for a palette color given by index.
     pub fn neighbors(&self, index: usize) -> &[usize] {
         &self.neighbors[index]
     }
 
+    /// Returns the palette color for the given index.
     pub fn float_color(&self, index: usize) -> Colorf {
         self.colors[index]
     }
 
+    /// Returns the number of colors in the palette.
     pub fn num_colors(&self) -> usize {
         self.colors.len()
     }
