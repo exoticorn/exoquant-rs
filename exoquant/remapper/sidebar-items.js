@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Remapper","A helper type to very slightly simplify remapping images using a `Ditherer`."]]});

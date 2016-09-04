@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["FloydSteinberg","A few variants of a Floyd-Steinberg ditherer."],["None","A Ditherer that simply remaps each pixel to the nearest palette index without any actual dithering."],["Ordered","A 2x2 ordered dithering."]],"trait":[["Ditherer","An interface for dithered color remapping."]]});

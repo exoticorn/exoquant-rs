@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["sort_palette","Sort neighboring colors in the image to be neighbors in the palette as well."]]});

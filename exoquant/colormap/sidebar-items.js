@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ColorMap","A data structure for fast nearest color lookups in a palette."]]});

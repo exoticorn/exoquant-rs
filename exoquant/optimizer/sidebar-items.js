@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["KMeans","A standard K-Means Optimizer."],["None","A No-op Optimizer implementation."],["WeightedKMeans","A slightly experimental Optimizer that improves color representation in dithered images."]],"trait":[["Optimizer","An interface for K-Means optimizers."]]});

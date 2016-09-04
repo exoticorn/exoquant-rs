@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Color","A RGBA8 color used for both the input image data and the palette output."],["Colorf","A color with floating point channel components."]]});
