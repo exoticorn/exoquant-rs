@@ -1,5 +1,9 @@
 use ::color::Color;
 
+/// Sort neighboring colors in the image to be neighbors in the palette as well.
+///
+/// Fairly silly and useless, but makes the palette (especially of ordered dithered images)
+/// look a lot more tidy.
 pub fn sort_palette(palette: &Vec<Color>, image: &Vec<u8>) -> (Vec<Color>, Vec<u8>) {
     let num_colors = palette.len();
     let mut counts: Vec<usize> = (0..num_colors).map(|_| 0).collect();

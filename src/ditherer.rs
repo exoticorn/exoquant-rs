@@ -1,6 +1,14 @@
+//! Dithered remapping
+
 use super::*;
 
+/// An interface for dithered color remapping.
+///
+/// End users of this library will most likely not call `ditherer::remap` directly, but rather use
+/// the `Remapper` helper.
 pub trait Ditherer {
+    /// Remaps an iterator of input pixel (float-)colors of an Image to an Iterator of palette
+    /// indices.
     fn remap<'a>(&'a self,
                  image: Box<Iterator<Item = Colorf> + 'a>,
                  width: usize,
@@ -9,6 +17,8 @@ pub trait Ditherer {
                  -> Box<Iterator<Item = usize> + 'a>;
 }
 
+/// A Ditherer that simply remaps each pixel to the nearest palette index without any actual
+/// dithering.
 pub struct None;
 impl Ditherer for None {
     fn remap<'a>(&'a self,
@@ -21,6 +31,14 @@ impl Ditherer for None {
     }
 }
 
+/// A 2x2 ordered dithering.
+///
+/// An ordered ditherer features slightly worse dithering quality than a floyd-steinberg ditherer,
+/// but might look more pleasing as it appears less like random noise. An ordered dithered image
+/// also has the advantage of compressing a lot better than floyd-steinberg dithered ones.
+///
+/// Note: don't use ordered dithering on images that are intended to be down-scaled later or risk
+/// moire artifacts.
 pub struct Ordered;
 const DITHER_MATRIX: [f64; 4] = [-0.375, 0.125, 0.375, -0.125];
 impl Ditherer for Ordered {
@@ -43,14 +61,21 @@ impl Ditherer for Ordered {
     }
 }
 
+/// A few variants of a Floyd-Steinberg ditherer.
 pub struct FloydSteinberg(f64, f64, f64, f64, f64);
 impl FloydSteinberg {
+    /// Returns a floyd-steinberg variant that reduces color bleeding.
     pub fn new() -> FloydSteinberg {
         FloydSteinberg(7.0 / 16.0, 3.0 / 16.0, 5.0 / 16.0, 1.0 / 16.0, 0.8)
     }
+    /// Returns a vanilla floyd-steinberg ditherer as originally described.
     pub fn vanilla() -> FloydSteinberg {
         FloydSteinberg(7.0 / 16.0, 3.0 / 16.0, 5.0 / 16.0, 1.0 / 16.0, 1.0)
     }
+    /// Returns a modified floyd-steinber ditherer slightly favoring checker board patterns.
+    ///
+    /// The resulting dithering looks a little less like random noise. Don't use for images
+    /// that are later down-scaled, as that will risk moire artifacts.
     pub fn checkered() -> FloydSteinberg {
         FloydSteinberg(7.0 / 16.0, 1.5 / 16.0, 6.5 / 16.0, 1.0 / 16.0, 0.5)
     }

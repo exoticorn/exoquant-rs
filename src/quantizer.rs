@@ -1,4 +1,5 @@
 use super::*;
+use optimizer::Optimizer;
 
 struct QuantizerNode {
     histogram: Vec<ColorCount>, // a histogram of the colors represented by this node

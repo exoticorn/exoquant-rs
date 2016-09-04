@@ -1,3 +1,5 @@
+//! Random sampling of iterators
+
 extern crate rand;
 
 pub struct RandomSampleIter<'a, T: 'a + Iterator> {
@@ -17,7 +19,9 @@ impl<'a, T: Iterator> Iterator for RandomSampleIter<'a, T> {
     }
 }
 
+/// Adds a `random_sample(probability)` method to iterators.
 pub trait RandomSample<T: Iterator> {
+    /// Returns a new iterator that randomly samples the original iterator.
     fn random_sample<'a>(&'a mut self, prob: f32) -> RandomSampleIter<'a, T>;
 }
 

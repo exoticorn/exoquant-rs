@@ -1,3 +1,5 @@
+//! K-Means optimization
+
 use super::*;
 use std::f64;
 
@@ -13,6 +15,7 @@ pub trait Optimizer {
     /// # Examples:
     /// ```
     /// # use exoquant::*;
+    /// # use exoquant::optimizer::Optimizer;
     /// # let image = testdata::test_image();
     /// # let histogram: Histogram = image.pixels.iter().cloned().collect();
     /// # let colorspace = SimpleColorSpace::default();

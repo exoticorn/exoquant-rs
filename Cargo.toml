@@ -2,9 +2,17 @@
 name = "exoquant"
 version = "0.1.0"
 authors = ["Dennis Ranke <dennis.ranke@gmail.com>"]
+description = "Very high quality image quantization"
+keywords = ["quantization", "palette"]
+license = "MIT"
+repository = "https://github.com/exoticorn/exoquant-rs"
+readme = "README.md"
+
+[features]
+random-sample = ['rand']
 
 [dependencies]
-rand = "0.3.14"
+rand = { version = "0.3.14", optional = true }
 
 [dev-dependencies]
 lodepng = "0.8.1"
