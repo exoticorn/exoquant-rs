@@ -17,4 +17,3 @@ rand = { version = "0.3.14", optional = true }
 
 [dev-dependencies]
 lodepng = "0.8.1"
-simplesvg = { git = "https://github.com/exoticorn/simplesvg", rev = "02cc30867bbdbfe1089b080b4b06edb92dec99a1" }
