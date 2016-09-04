@@ -6,6 +6,7 @@ description = "Very high quality image quantization"
 keywords = ["quantization", "palette"]
 license = "MIT"
 repository = "https://github.com/exoticorn/exoquant-rs"
+documentation = "https://exoticorn.github.io/exoquant-rs/exoquant/"
 readme = "README.md"
 
 [features]
