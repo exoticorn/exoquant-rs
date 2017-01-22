@@ -147,7 +147,8 @@ fn occludes(origin: Colorf, occluder: Colorf, target: Colorf) -> bool {
 impl ColorMap {
     /// Create a `ColorMap` from a slice of `Color`s.
     pub fn new<T: ColorSpace>(colors: &[Color], colorspace: &T) -> ColorMap {
-        let float_colors: Vec<_> = colors.iter().map(|c| colorspace.to_float(*c)).collect();
+        let float_colors: Vec<_> =
+            colors.iter().map(|c| colorspace.output_to_quantization((*c).into())).collect();
         Self::from_float_colors(float_colors)
     }
 

@@ -1,7 +1,7 @@
 use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div};
 
 /// A RGBA8 color used for both the input image data and the palette output.
-#[derive(Copy,Clone,Eq,PartialEq,Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
@@ -64,6 +64,26 @@ impl Colorf {
             b: self.b.max(0.0).powf(e),
             a: self.a.max(0.0).powf(e),
         }
+    }
+}
+
+impl From<Color> for Colorf {
+    fn from(c: Color) -> Colorf {
+        Colorf {
+            r: c.r as f64 / 255.,
+            g: c.g as f64 / 255.,
+            b: c.b as f64 / 255.,
+            a: c.a as f64 / 255.,
+        }
+    }
+}
+
+impl From<Colorf> for Color {
+    fn from(c: Colorf) -> Color {
+        Color::new((c.r * 255.).max(0.).min(255.) as u8,
+                   (c.g * 255.).max(0.).min(255.) as u8,
+                   (c.b * 255.).max(0.).min(255.) as u8,
+                   (c.a * 255.).max(0.).min(255.) as u8)
     }
 }
 

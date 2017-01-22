@@ -7,38 +7,65 @@ use super::*;
 /// is required..
 
 pub trait ColorSpace {
-    fn to_linear(&self, color: Colorf) -> Colorf;
-    fn from_linear(&self, color: Colorf) -> Colorf;
+    fn input_to_linear(&self, color: Colorf) -> Colorf;
 
-    fn to_dither(&self, c: Colorf) -> Colorf {
-        c
-    }
-    fn from_dither(&self, c: Colorf) -> Colorf {
-        c
+    fn target_gamma(&self) -> f64;
+
+    fn to_scaled(&self, color: Colorf) -> Colorf;
+    fn from_scaled(&self, color: Colorf) -> Colorf;
+
+    fn input_to_quantization(&self, color: Colorf) -> Colorf {
+        let color = self.input_to_linear(color);
+        let color = self.to_target_gamma(color);
+        self.to_scaled(color)
     }
 
-    fn to_float(&self, c: Color) -> Colorf {
-        self.to_linear(Colorf {
-            r: c.r as f64 / 255.0,
-            g: c.g as f64 / 255.0,
-            b: c.b as f64 / 255.0,
-            a: c.a as f64 / 255.0,
-        })
+    fn quantization_to_output(&self, color: Colorf) -> Colorf {
+        let color = self.from_scaled(color);
+        let color = self.from_target_gamma(color);
+        self.linear_to_output(color)
     }
-    fn from_float(&self, c: Colorf) -> Color {
-        let c = self.from_linear(c);
-        Color::new((c.r * 255.0).max(0.0).min(255.0) as u8,
-                   (c.g * 255.0).max(0.0).min(255.0) as u8,
-                   (c.b * 255.0).max(0.0).min(255.0) as u8,
-                   (c.a * 255.0).max(0.0).min(255.0) as u8)
+
+    fn quantization_to_dither(&self, color: Colorf) -> Colorf {
+        let color = self.from_scaled(color);
+        let color = self.from_target_gamma(color);
+        self.to_scaled(color)
+    }
+
+    fn dither_to_quantization(&self, color: Colorf) -> Colorf {
+        let color = self.from_scaled(color);
+        let color = self.to_target_gamma(color);
+        self.to_scaled(color)
+    }
+
+    fn output_to_quantization(&self, color: Colorf) -> Colorf {
+        let color = self.output_to_linear(color);
+        let color = self.to_target_gamma(color);
+        self.to_scaled(color)
+    }
+
+    fn linear_to_output(&self, color: Colorf) -> Colorf {
+        color.pow(1. / self.target_gamma())
+    }
+
+    fn output_to_linear(&self, color: Colorf) -> Colorf {
+        color.pow(self.target_gamma())
+    }
+
+    fn to_target_gamma(&self, color: Colorf) -> Colorf {
+        color.pow(1. / self.target_gamma())
+    }
+
+    fn from_target_gamma(&self, color: Colorf) -> Colorf {
+        color.pow(self.target_gamma())
     }
 }
 
 /// The default colorspace implementation.
 
 pub struct SimpleColorSpace {
-    pub gamma: f64,
-    pub dither_gamma: f64,
+    pub source_gamma: f64,
+    pub target_gamma: f64,
     pub transparency_scale: f64,
     pub scale: Colorf,
 }
@@ -46,8 +73,8 @@ pub struct SimpleColorSpace {
 impl Default for SimpleColorSpace {
     fn default() -> SimpleColorSpace {
         SimpleColorSpace {
-            gamma: 1.145,
-            dither_gamma: 2.2,
+            source_gamma: 2.2,
+            target_gamma: 2.2,
             transparency_scale: 0.01,
             scale: Colorf {
                 r: 1.0,
@@ -60,8 +87,16 @@ impl Default for SimpleColorSpace {
 }
 
 impl ColorSpace for SimpleColorSpace {
-    fn to_linear(&self, color: Colorf) -> Colorf {
-        let mut color = color.pow(self.gamma) * self.scale;
+    fn input_to_linear(&self, color: Colorf) -> Colorf {
+        color.pow(self.source_gamma)
+    }
+
+    fn target_gamma(&self) -> f64 {
+        self.target_gamma
+    }
+
+    fn to_scaled(&self, color: Colorf) -> Colorf {
+        let mut color = color * self.scale;
         let f = color.a * (1.0 - self.transparency_scale) + self.transparency_scale;
         color.r *= f;
         color.g *= f;
@@ -69,22 +104,11 @@ impl ColorSpace for SimpleColorSpace {
         color
     }
 
-    fn from_linear(&self, color: Colorf) -> Colorf {
-        let c = color / self.scale;
-        let g = 1.0 / self.gamma;
-        let mut c = c.pow(g);
-        let f = 1.0 / (color.a * (1.0 - self.transparency_scale) + self.transparency_scale);
-        c.r *= f;
-        c.g *= f;
-        c.b *= f;
-        c
-    }
-
-    fn to_dither(&self, color: Colorf) -> Colorf {
-        color.pow(self.dither_gamma / self.gamma)
-    }
-
-    fn from_dither(&self, color: Colorf) -> Colorf {
-        color.pow(self.gamma / self.dither_gamma)
+    fn from_scaled(&self, mut color: Colorf) -> Colorf {
+        let f = 1. / (color.a * (1.0 - self.transparency_scale) + self.transparency_scale);
+        color.r *= f;
+        color.g *= f;
+        color.b *= f;
+        color / self.scale
     }
 }

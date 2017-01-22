@@ -55,7 +55,7 @@ impl Histogram {
             .iter()
             .map(|(color, count)| {
                 ColorCount {
-                    color: colorspace.to_float(*color),
+                    color: colorspace.input_to_quantization((*color).into()),
                     count: *count,
                 }
             })

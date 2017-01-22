@@ -182,7 +182,7 @@ impl Quantizer {
 
     /// Returns colors the current Quantizer state represents..
     pub fn colors<T: ColorSpace>(&self, colorspace: &T) -> Vec<Color> {
-        self.0.iter().map(|node| colorspace.from_float(node.avg)).collect()
+        self.0.iter().map(|node| colorspace.quantization_to_output(node.avg).into()).collect()
     }
 
     /// Run a number of K-Means iteration on the current quantizer state.

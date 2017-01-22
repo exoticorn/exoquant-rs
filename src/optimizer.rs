@@ -33,11 +33,12 @@ pub trait Optimizer {
             return palette.iter().cloned().collect();
         }
         let hist = histogram.to_color_counts(colorspace);
-        let mut colors = palette.iter().map(|c| colorspace.to_float(*c)).collect();
+        let mut colors =
+            palette.iter().map(|c| colorspace.output_to_quantization((*c).into())).collect();
         for _ in 0..num_iterations {
             colors = self.step(colors, &hist);
         }
-        colors.iter().map(|&c| colorspace.from_float(c)).collect()
+        colors.iter().map(|&c| colorspace.quantization_to_output(c).into()).collect()
     }
 
     /// Returns whether this Optimizer is a No-op implementation.

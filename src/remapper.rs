@@ -50,7 +50,7 @@ impl<'a, T: ColorSpace, D: Ditherer + ?Sized> Remapper<'a, T, D> {
     pub fn remap(&self, image: &[Color], width: usize) -> Vec<u8> {
         assert!(self.map.num_colors() <= 256);
         self.ditherer
-            .remap(Box::new(image.iter().map(|&c| self.colorspace.to_float(c))),
+            .remap(Box::new(image.iter().map(|&c| self.colorspace.input_to_quantization(c.into()))),
                    width,
                    &self.map,
                    self.colorspace)
@@ -61,35 +61,36 @@ impl<'a, T: ColorSpace, D: Ditherer + ?Sized> Remapper<'a, T, D> {
     /// Remap and dither a `&[Color]` to a `Vec<usize>`.
     pub fn remap_usize(&self, image: &[Color], width: usize) -> Vec<usize> {
         self.ditherer
-            .remap(Box::new(image.iter().map(|&c| self.colorspace.to_float(c))),
+            .remap(Box::new(image.iter().map(|&c| self.colorspace.input_to_quantization(c.into()))),
                    width,
                    &self.map,
                    self.colorspace)
             .collect()
     }
 
-    /// Remap and dither a `Box<Iterator<Item = Color>>` to a `Box<Iterator<Item = u8>>`.
-    pub fn remap_iter<'b>(&'b self,
-                          image: Box<Iterator<Item = Color> + 'b>,
-                          width: usize)
-                          -> Box<Iterator<Item = u8> + 'b> {
+    /// Remap and dither an `Iterator<Item = Color>` to a `Box<Iterator<Item = u8>>`.
+    pub fn remap_iter<'b, I>(&'b self, image: I, width: usize) -> Box<Iterator<Item = u8> + 'b>
+        where I: Iterator<Item = Color> + 'b
+    {
         assert!(self.map.num_colors() <= 256);
         Box::new(self.ditherer
-            .remap(Box::new(image.map(move |c| self.colorspace.to_float(c))),
+            .remap(Box::new(image.map(move |c| self.colorspace.input_to_quantization(c.into()))),
                    width,
                    &self.map,
                    self.colorspace)
             .map(|i| i as u8))
     }
 
-    /// Remap and dither a `Box<Iterator<Item = Color>>` to a `Box<Iterator<Item = usize>>`.
-    pub fn remap_iter_usize<'b>(&'b self,
-                                image: Box<Iterator<Item = Color> + 'b>,
-                                width: usize)
-                                -> Box<Iterator<Item = usize> + 'b> {
+    /// Remap and dither an `Iterator<Item = Color>` to a `Box<Iterator<Item = usize>>`.
+    pub fn remap_iter_usize<'b, I>(&'b self,
+                                   image: I,
+                                   width: usize)
+                                   -> Box<Iterator<Item = usize> + 'b>
+        where I: Iterator<Item = Color> + 'b
+    {
         assert!(self.map.num_colors() <= 256);
         self.ditherer
-            .remap(Box::new(image.map(move |c| self.colorspace.to_float(c))),
+            .remap(Box::new(image.map(move |c| self.colorspace.input_to_quantization(c.into()))),
                    width,
                    &self.map,
                    self.colorspace)
