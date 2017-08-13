@@ -64,7 +64,8 @@ mod quantizer;
 mod colormap;
 mod remapper;
 pub mod optimizer;
-mod colorspace;
+pub mod gamma;
+pub mod colorweights;
 mod palettesort;
 mod basicapi;
 #[cfg(feature="random-sample")]
@@ -76,7 +77,6 @@ pub mod testdata;
 pub use basicapi::{convert_to_indexed, generate_palette};
 pub use color::*;
 pub use colormap::ColorMap;
-pub use colorspace::{ColorSpace, SimpleColorSpace};
 pub use histogram::*;
 pub use palettesort::sort_palette;
 pub use quantizer::Quantizer;

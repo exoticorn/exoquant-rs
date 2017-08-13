@@ -2,6 +2,8 @@
 
 use super::*;
 use std::f64;
+use colorweights::{Weighted, ColorWeights};
+use gamma::{Gamma, QUANTIZATION_GAMMA};
 
 /// An interface for K-Means optimizers.
 pub trait Optimizer {
@@ -24,21 +26,31 @@ pub trait Optimizer {
     ///   &histogram, 16);
     /// ```
     fn optimize_palette(&self,
-                        colorspace: &ColorSpace,
-                        palette: &[Color],
+                        palette: &[Colorf],
                         histogram: &Histogram,
                         num_iterations: usize)
-                        -> Vec<Color> {
+                        -> Vec<Colorf> {
+        self.optimize_palette_with_weights(palette,
+                                           histogram,
+                                           ColorWeights::default(),
+                                           num_iterations)
+    }
+
+    fn optimize_palette_with_weights<W: Weighted>(&self,
+                                                  palette: &[Colorf],
+                                                  histogram: &Histogram,
+                                                  weights: &W,
+                                                  num_iterations: usize)
+                                                  -> Vec<Colorf> {
         if self.is_noop() {
             return palette.iter().cloned().collect();
         }
-        let hist = histogram.to_color_counts(colorspace);
-        let mut colors =
-            palette.iter().map(|c| colorspace.output_to_quantization((*c).into())).collect();
+        let hist = histogram.to_color_counts();
+        let mut colors = palette.iter().map(QUANTIZATION_GAMMA.from_linear).collect();
         for _ in 0..num_iterations {
             colors = self.step(colors, &hist);
         }
-        colors.iter().map(|&c| colorspace.quantization_to_output(c).into()).collect()
+        colors.iter().map(|&c| QUANTIZATION_GAMMA.to_linear(c)).collect()
     }
 
     /// Returns whether this Optimizer is a No-op implementation.

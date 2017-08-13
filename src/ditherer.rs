@@ -1,6 +1,7 @@
 //! Dithered remapping
 
 use super::*;
+use gamma::{Gamma, QUANTIZATION_GAMMA};
 
 /// An interface for dithered color remapping.
 ///
@@ -12,8 +13,7 @@ pub trait Ditherer {
     fn remap<'a>(&'a self,
                  image: Box<Iterator<Item = Colorf> + 'a>,
                  width: usize,
-                 map: &'a ColorMap,
-                 colorspace: &'a ColorSpace)
+                 map: &'a ColorMap)
                  -> Box<Iterator<Item = usize> + 'a>;
 }
 
@@ -24,8 +24,7 @@ impl Ditherer for None {
     fn remap<'a>(&'a self,
                  image: Box<Iterator<Item = Colorf> + 'a>,
                  _: usize,
-                 map: &'a ColorMap,
-                 _: &'a ColorSpace)
+                 map: &'a ColorMap)
                  -> Box<Iterator<Item = usize> + 'a> {
         Box::new(image.map(move |c| map.find_nearest(c)))
     }
@@ -45,8 +44,7 @@ impl Ditherer for Ordered {
     fn remap<'a>(&'a self,
                  image: Box<Iterator<Item = Colorf> + 'a>,
                  width: usize,
-                 map: &'a ColorMap,
-                 _: &'a ColorSpace)
+                 map: &'a ColorMap)
                  -> Box<Iterator<Item = usize> + 'a> {
         Box::new(image.enumerate()
             .map(move |(i, color)| {
@@ -84,8 +82,7 @@ impl Ditherer for FloydSteinberg {
     fn remap<'a>(&'a self,
                  image: Box<Iterator<Item = Colorf> + 'a>,
                  width: usize,
-                 map: &'a ColorMap,
-                 colorspace: &'a ColorSpace)
+                 map: &'a ColorMap)
                  -> Box<Iterator<Item = usize> + 'a> {
         let mut errors: Vec<Colorf> = (0..width * 2).map(|_| Colorf::zero()).collect();
         Box::new(image.enumerate()
@@ -95,11 +92,10 @@ impl Ditherer for FloydSteinberg {
                 let y = y & 1;
                 let row = y * width;
                 let other = (y ^ 1) * width;
-                let c = colorspace.quantization_to_dither(c);
-                let index =
-                    map.find_nearest(colorspace.dither_to_quantization(c + errors[row + x]));
+                let c = QUANTIZATION_GAMMA.to_linear(c);
+                let index = map.find_nearest(QUANTIZATION_GAMMA.from_linear(c + errors[row + x]));
                 let c2 = map.float_color(index);
-                let error = c + errors[row + x] * self.4 - colorspace.quantization_to_dither(c2);
+                let error = c + errors[row + x] * self.4 - QUANTIZATION_GAMMA.to_linear(c2);
                 errors[row + (x + 1) % width] += error * self.0;
                 errors[other + (x + 1) % width] = error * self.3;
                 errors[other + x] += error * self.2;

@@ -1,5 +1,7 @@
 use super::*;
 use optimizer::Optimizer;
+use colorweights::{Weighted, ColorWeights};
+use gamma::{Gamma, QUANTIZATION_GAMMA};
 
 struct QuantizerNode {
     histogram: Vec<ColorCount>, // a histogram of the colors represented by this node
@@ -130,32 +132,42 @@ impl QuantizerNode {
 /// # let colorspace = SimpleColorSpace::default();
 /// let palette = Quantizer::create_palette(&histogram, &colorspace, 256);
 /// ```
-pub struct Quantizer(Vec<QuantizerNode>);
+pub struct Quantizer<W: Weighted> {
+    nodes: Vec<QuantizerNode>,
+    weights: W,
+}
 
-impl Quantizer {
+impl<W: Weighted> Quantizer<W> {
     /// Create a new Quantizer state for the given histogram.
-    pub fn new<T: ColorSpace>(histogram: &::histogram::Histogram, colorspace: &T) -> Quantizer {
-        let hist = histogram.to_color_counts(colorspace);
-        Quantizer(vec![QuantizerNode::new(hist)])
+    pub fn new(histogram: &::histogram::Histogram) -> Quantizer<ColorWeights> {
+        let weights = ColorWeights::default();
+        let mut hist = histogram.to_color_counts();
+        for c in hist.iter_mut() {
+            c.color = weights.to_weighted(c.color)
+        }
+        Quantizer {
+            nodes: vec![QuantizerNode::new(hist)],
+            weights: weights,
+        }
     }
 
     /// A shortcut function to directly create a palette from a histogram.
-    pub fn create_palette<T: ColorSpace>(histogram: &::histogram::Histogram,
-                                         colorspace: &T,
-                                         num_colors: usize)
-                                         -> Vec<Color> {
-        let mut quantizer = Self::new(histogram, colorspace);
+    pub fn create_palette<G: Gamma>(histogram: &::histogram::Histogram,
+                                    destination_gamma: &G,
+                                    num_colors: usize)
+                                    -> Vec<Color> {
+        let mut quantizer = Self::new(histogram);
         while quantizer.num_colors() < num_colors {
             quantizer.step();
         }
-        quantizer.colors(colorspace)
+        quantizer.colors().map(|color| destination_gamma.from_linear(color).into()).collect()
     }
 
     /// Returns the current number of colors in this Quantizer state.
     ///
     /// This starts off at 1 and increases by 1 for each call to `quantizer.step()`.
     pub fn num_colors(&self) -> usize {
-        self.0.len()
+        self.nodes.len()
     }
 
     /// Run one quantization step which increases the `num_colors()` by one.
@@ -164,25 +176,29 @@ impl Quantizer {
             let node = {
                 let mut best_i = 0;
                 let mut best_e = 0.0;
-                for i in 0..self.0.len() {
-                    if self.0[i].vdif >= best_e {
-                        best_e = self.0[i].vdif;
+                for i in 0..self.nodes.len() {
+                    if self.nodes[i].vdif >= best_e {
+                        best_e = self.nodes[i].vdif;
                         best_i = i;
                     }
                 }
-                self.0.swap_remove(best_i)
+                self.nodes.swap_remove(best_i)
             };
             let mut colors1 = node.histogram;
             let colors2 = colors1.split_off(node.split);
             (QuantizerNode::new(colors1), QuantizerNode::new(colors2))
         };
-        self.0.push(new_node1);
-        self.0.push(new_node2);
+        self.nodes.push(new_node1);
+        self.nodes.push(new_node2);
     }
 
     /// Returns colors the current Quantizer state represents..
-    pub fn colors<T: ColorSpace>(&self, colorspace: &T) -> Vec<Color> {
-        self.0.iter().map(|node| colorspace.quantization_to_output(node.avg).into()).collect()
+    /// (As Colorf in linear space)
+    pub fn colors(&self) -> Vec<Colorf> {
+        self.nodes
+            .iter()
+            .map(|node| QUANTIZATION_GAMMA.to_linear(self.weights.from_weighted(node.avg)))
+            .collect()
     }
 
     /// Run a number of K-Means iteration on the current quantizer state.
@@ -208,22 +224,25 @@ impl Quantizer {
     /// }
     /// let palette = quantizer.colors(&colorspace);
     /// ```
-    pub fn optimize(self, optimizer: &Optimizer, num_iterations: usize) -> Quantizer {
+    pub fn optimize(self, optimizer: &Optimizer, num_iterations: usize) -> Self {
         if optimizer.is_noop() {
             return self;
         }
         let (mut colors, histograms): (Vec<Colorf>, Vec<Vec<ColorCount>>) =
-            self.0.into_iter().map(|node| (node.avg, node.histogram)).unzip();
+            self.nodes.into_iter().map(|node| (node.avg, node.histogram)).unzip();
         let histogram: Vec<ColorCount> =
             histograms.iter().flat_map(|h| h.iter().cloned()).collect();
         for _ in 0..num_iterations {
             colors = optimizer.step(colors, &histogram);
         }
         let mut histograms: Vec<Vec<ColorCount>> = (0..colors.len()).map(|_| Vec::new()).collect();
-        let map = ColorMap::from_float_colors(colors);
+        let map = ColorMap::from_quantization_space(colors);
         for color in histogram {
             histograms[map.find_nearest(color.color)].push(color);
         }
-        Quantizer(histograms.into_iter().map(|h| QuantizerNode::new(h)).collect())
+        Quantizer {
+            nodes: histograms.into_iter().map(|h| QuantizerNode::new(h)).collect(),
+            weights: self.weights,
+        }
     }
 }

@@ -1,4 +1,5 @@
 use super::*;
+use quantizer::QUANTIZATION_GAMMA;
 
 /// A data structure for fast nearest color lookups in a palette.
 pub struct ColorMap {
@@ -146,14 +147,13 @@ fn occludes(origin: Colorf, occluder: Colorf, target: Colorf) -> bool {
 
 impl ColorMap {
     /// Create a `ColorMap` from a slice of `Color`s.
-    pub fn new<T: ColorSpace>(colors: &[Color], colorspace: &T) -> ColorMap {
-        let float_colors: Vec<_> =
-            colors.iter().map(|c| colorspace.output_to_quantization((*c).into())).collect();
+    pub fn new(colors: &[Colorf]) -> ColorMap {
+        let float_colors: Vec<_> = colors.iter().map(|c| c.pow(QUANTIZATION_GAMMA)).collect();
         Self::from_float_colors(float_colors)
     }
 
     /// Create a `ColorMap` from float colors.
-    pub fn from_float_colors(colors: Vec<Colorf>) -> ColorMap {
+    pub fn from_quantization_space(colors: Vec<Colorf>) -> ColorMap {
         let kdtree = KDNode::new((0..colors.len()).collect(), &colors);
         let neighbor_distance = colors.iter()
             .enumerate()

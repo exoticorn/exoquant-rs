@@ -1,5 +1,6 @@
 use super::*;
 use ditherer::Ditherer;
+use gamma::Gamma;
 
 /// A helper type to very slightly simplify remapping images using a `Ditherer`.
 ///
@@ -30,24 +31,22 @@ use ditherer::Ditherer;
 /// let iter = remapper.remap_iter(Box::new(image.pixels.iter().cloned()), image.width);
 /// let indexed_image_data: Vec<u8> = iter.collect();
 /// ```
-pub struct Remapper<'a, T: 'a + ColorSpace, D: 'a + Ditherer + ?Sized> {
+pub struct Remapper<'a, D: 'a + Ditherer + ?Sized> {
     map: ColorMap,
-    colorspace: &'a T,
     ditherer: &'a D,
 }
 
-impl<'a, T: ColorSpace, D: Ditherer + ?Sized> Remapper<'a, T, D> {
+impl<'a, D: Ditherer + ?Sized> Remapper<'a, D> {
     /// Create a new Remapper instance for the given palette, colorspace and ditherer.
-    pub fn new(palette: &[Color], colorspace: &'a T, ditherer: &'a D) -> Remapper<'a, T, D> {
+    pub fn new(palette: &[Colorf], ditherer: &'a D) -> Remapper<'a, D> {
         Remapper {
-            map: ColorMap::new(palette, colorspace),
-            colorspace: colorspace,
+            map: ColorMap::new(palette),
             ditherer: ditherer,
         }
     }
 
     /// Remap and dither a `&[Color]` to a `Vec<u8>`.
-    pub fn remap(&self, image: &[Color], width: usize) -> Vec<u8> {
+    pub fn remap<G: Gamma>(&self, image: &[Color], width: usize, gamma: Gamma) -> Vec<u8> {
         assert!(self.map.num_colors() <= 256);
         self.ditherer
             .remap(Box::new(image.iter().map(|&c| self.colorspace.input_to_quantization(c.into()))),

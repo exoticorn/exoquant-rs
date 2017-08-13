@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::iter::{FromIterator, IntoIterator};
 
 use super::*;
+use gamma::Gamma;
 
 /// A histogram that counts the number of times each color occurs in the input image data.
 ///
@@ -28,6 +29,7 @@ use super::*;
 /// ```
 pub struct Histogram {
     data: HashMap<Color, usize>,
+    gamma: f64,
 }
 
 /// A single float color in quantization color space with the number of times it occurs in the
@@ -44,18 +46,28 @@ pub struct ColorCount {
 impl Histogram {
     /// Returns a new, empty `Histogram`.
     pub fn new() -> Histogram {
-        Histogram { data: HashMap::new() }
+        Histogram {
+            data: HashMap::new(),
+            gamma: 2.2,
+        }
+    }
+
+    pub fn with_gamma(gamma: f64) -> Histogram {
+        Histogram {
+            data: HashMap::new(),
+            gamma: gamma,
+        }
     }
 
     /// Converts the rgba8 `Histogram` to a Vec of `ColorCount` in quantization color space.
     ///
     /// Mostly used internally.
-    pub fn to_color_counts(&self, colorspace: &ColorSpace) -> Vec<ColorCount> {
+    pub fn to_color_counts(&self) -> Vec<ColorCount> {
         self.data
             .iter()
             .map(|(color, count)| {
                 ColorCount {
-                    color: colorspace.input_to_quantization((*color).into()),
+                    color: self.gamma.to_quantization((*color).into()),
                     count: *count,
                 }
             })
