@@ -58,28 +58,30 @@
 //! let indexed_data = remapper.remap(&image.pixels, image.width);
 //! ```
 
-mod color;
-mod histogram;
-mod quantizer;
-mod colormap;
-mod remapper;
-pub mod optimizer;
-mod colorspace;
-mod palettesort;
 mod basicapi;
-#[cfg(feature="random-sample")]
-pub mod random_sample;
+mod color;
+pub mod color2;
+mod colormap;
+mod colorspace;
 pub mod ditherer;
+mod histogram;
+pub mod optimizer;
+mod palettesort;
+mod quantizer;
+#[cfg(feature = "random-sample")]
+pub mod random_sample;
+mod remapper;
 #[doc(hidden)]
 pub mod testdata;
 
 pub use basicapi::{convert_to_indexed, generate_palette};
 pub use color::*;
+pub use color2::*;
 pub use colormap::ColorMap;
 pub use colorspace::{ColorSpace, SimpleColorSpace};
 pub use histogram::*;
 pub use palettesort::sort_palette;
 pub use quantizer::Quantizer;
-#[cfg(feature="random-sample")]
+#[cfg(feature = "random-sample")]
 pub use random_sample::RandomSample;
 pub use remapper::Remapper;
