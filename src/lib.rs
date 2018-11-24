@@ -60,9 +60,7 @@
 
 mod basicapi;
 mod color;
-pub mod color2;
 mod colormap;
-mod colorspace;
 pub mod ditherer;
 mod histogram;
 pub mod optimizer;
@@ -76,9 +74,7 @@ pub mod testdata;
 
 pub use basicapi::{convert_to_indexed, generate_palette};
 pub use color::*;
-pub use color2::*;
 pub use colormap::ColorMap;
-pub use colorspace::{ColorSpace, SimpleColorSpace};
 pub use histogram::*;
 pub use palettesort::sort_palette;
 pub use quantizer::Quantizer;

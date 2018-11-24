@@ -3,82 +3,94 @@ use optimizer::Optimizer;
 
 struct QuantizerNode {
     histogram: Vec<ColorCount>, // a histogram of the colors represented by this node
-    avg: Colorf, // the average color of this node
-    vdif: f64, // the improvement to the total variance when splitting this node
-    split: usize, // the best index to split this node at
+    avg: Vec4<LabColor>,        // the average color of this node
+    vdif: f32,                  // the improvement to the total variance when splitting this node
+    split: usize,               // the best index to split this node at
 }
 
 impl QuantizerNode {
     fn new(mut histogram: Vec<ColorCount>) -> QuantizerNode {
         // First calculate the color average and variance over the histogram
         let mut n = 0usize;
-        let mut fsum = Colorf::zero();
-        let mut fsum2 = Colorf::zero();
+        let mut fsum = Vec4::<LabColor>::zero();
+        let mut fsum2 = Vec4::<LabColor>::zero();
 
         for entry in &histogram {
+            let c = entry.color.to_vec4();
             n += entry.count;
-            fsum += entry.color * entry.count as f64;
-            fsum2 += entry.color * entry.color * entry.count as f64;
+            fsum += c * entry.count as f32;
+            fsum2 += c * c * entry.count as f32;
         }
 
         if n == 0 {
             return QuantizerNode {
                 histogram: histogram,
-                avg: Colorf::zero(),
+                avg: Vec4::zero(),
                 vdif: 0.0,
                 split: 0,
             };
         }
 
-        let avg = fsum * (1.0 / n as f64);
+        let avg = fsum * (1.0 / n as f32);
         let vc = fsum2 - fsum * avg;
-        let v = vc.r + vc.g + vc.b + vc.a;
+        let v = vc.x + vc.y + vc.z + vc.w;
 
         // Next sort histogram by the channel with the largest variance
-        if vc.r > vc.g && vc.r > vc.b && vc.r > vc.a {
-            histogram.sort_by(|a, b| a.color.r.partial_cmp(&b.color.r).unwrap());
-        } else if vc.g > vc.b && vc.g > vc.a {
-            histogram.sort_by(|a, b| a.color.g.partial_cmp(&b.color.g).unwrap());
-        } else if vc.b > vc.a {
+        if vc.x > vc.y && vc.x > vc.z && vc.x > vc.w {
+            histogram.sort_by(|a, b| a.color.l.partial_cmp(&b.color.l).unwrap());
+        } else if vc.y > vc.z && vc.y > vc.w {
+            histogram.sort_by(|a, b| a.color.a.partial_cmp(&b.color.a).unwrap());
+        } else if vc.z > vc.w {
             histogram.sort_by(|a, b| a.color.b.partial_cmp(&b.color.b).unwrap());
         } else {
-            histogram.sort_by(|a, b| a.color.a.partial_cmp(&b.color.a).unwrap());
+            histogram.sort_by(|a, b| a.color.alpha.partial_cmp(&b.color.alpha).unwrap());
         }
 
         // Determine primary vector of distribution in the histogram
-        let mut dir = Colorf::zero();
+        let mut dir = Vec4::<LabColor>::zero();
         for entry in &histogram {
-            let mut tmp = (entry.color - avg) * entry.count as f64;
-            if tmp.dot(&dir) < 0.0 {
+            let mut tmp = (entry.color.to_vec4() - avg) * entry.count as f32;
+            if tmp.dot(dir) < 0.0 {
                 tmp *= -1.0;
             }
             dir += tmp;
         }
 
         dir *= {
-            let s = dir.dot(&dir).sqrt();
-            if s < 0.000000001 { 1.0 } else { 1.0 / s }
+            let s = dir.abs();
+            if s < 0.000000001 {
+                1.0f32
+            } else {
+                1.0 / s
+            }
         };
 
         // Now sort histogram by primary vector
-        histogram.sort_by(|a, b| a.color.dot(&dir).partial_cmp(&b.color.dot(&dir)).unwrap());
+        histogram.sort_by(|a, b| {
+            a.color
+                .to_vec4()
+                .dot(dir)
+                .partial_cmp(&b.color.to_vec4().dot(dir))
+                .unwrap()
+        });
 
         // Find split index that results in lowest total variance
-        let mut sum = Colorf::zero();
-        let mut sum2 = Colorf::zero();
+        let mut sum = Vec4::<LabColor>::zero();
+        let mut sum2 = Vec4::<LabColor>::zero();
         let mut vdif = -v;
         let mut n2 = 0;
         let mut split = 0usize;
         for (i, entry) in histogram.iter().enumerate() {
+            let c = entry.color.to_vec4();
             n2 += entry.count;
-            sum += entry.color * entry.count as f64;
-            sum2 += entry.color * entry.color * entry.count as f64;
+            sum += c * entry.count as f32;
+            sum2 += c * c * entry.count as f32;
 
             if n2 < n {
-                let tmp = sum2 - sum * sum * (1.0 / n2 as f64);
+                let tmp = sum2 - sum * sum * (1.0 / n2 as f32);
                 let dif_sum = fsum - sum;
-                let tmp2 = (fsum2 - sum2) - dif_sum * dif_sum * (1.0 / (n - n2) as f64);
-                let nv = tmp.r + tmp.g + tmp.b + tmp.a + tmp2.r + tmp2.g + tmp2.b + tmp2.a;
+                let tmp2 = (fsum2 - sum2) - dif_sum * dif_sum * (1.0 / (n - n2) as f32);
+                let nv = tmp.x + tmp.y + tmp.z + tmp.w + tmp2.x + tmp2.y + tmp2.z + tmp2.w;
                 if -nv > vdif {
                     vdif = -nv;
                     split = i + 1;
@@ -134,21 +146,18 @@ pub struct Quantizer(Vec<QuantizerNode>);
 
 impl Quantizer {
     /// Create a new Quantizer state for the given histogram.
-    pub fn new<T: ColorSpace>(histogram: &::histogram::Histogram, colorspace: &T) -> Quantizer {
-        let hist = histogram.to_color_counts(colorspace);
+    pub fn new(histogram: &::histogram::Histogram) -> Quantizer {
+        let hist = histogram.to_color_counts();
         Quantizer(vec![QuantizerNode::new(hist)])
     }
 
     /// A shortcut function to directly create a palette from a histogram.
-    pub fn create_palette<T: ColorSpace>(histogram: &::histogram::Histogram,
-                                         colorspace: &T,
-                                         num_colors: usize)
-                                         -> Vec<Color> {
-        let mut quantizer = Self::new(histogram, colorspace);
+    pub fn create_palette(histogram: &::histogram::Histogram, num_colors: usize) -> Vec<Color> {
+        let mut quantizer = Self::new(histogram);
         while quantizer.num_colors() < num_colors {
             quantizer.step();
         }
-        quantizer.colors(colorspace)
+        quantizer.colors()
     }
 
     /// Returns the current number of colors in this Quantizer state.
@@ -181,8 +190,11 @@ impl Quantizer {
     }
 
     /// Returns colors the current Quantizer state represents..
-    pub fn colors<T: ColorSpace>(&self, colorspace: &T) -> Vec<Color> {
-        self.0.iter().map(|node| colorspace.from_float(node.avg)).collect()
+    pub fn colors(&self) -> Vec<Color> {
+        self.0
+            .iter()
+            .map(|node| node.avg.to_color().into())
+            .collect()
     }
 
     /// Run a number of K-Means iteration on the current quantizer state.
@@ -212,8 +224,11 @@ impl Quantizer {
         if optimizer.is_noop() {
             return self;
         }
-        let (mut colors, histograms): (Vec<Colorf>, Vec<Vec<ColorCount>>) =
-            self.0.into_iter().map(|node| (node.avg, node.histogram)).unzip();
+        let (mut colors, histograms): (Vec<LabColor>, Vec<Vec<ColorCount>>) = self
+            .0
+            .into_iter()
+            .map(|node| (node.avg.to_color(), node.histogram))
+            .unzip();
         let histogram: Vec<ColorCount> =
             histograms.iter().flat_map(|h| h.iter().cloned()).collect();
         for _ in 0..num_iterations {
@@ -224,6 +239,11 @@ impl Quantizer {
         for color in histogram {
             histograms[map.find_nearest(color.color)].push(color);
         }
-        Quantizer(histograms.into_iter().map(|h| QuantizerNode::new(h)).collect())
+        Quantizer(
+            histograms
+                .into_iter()
+                .map(|h| QuantizerNode::new(h))
+                .collect(),
+        )
     }
 }

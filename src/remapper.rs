@@ -30,18 +30,16 @@ use ditherer::Ditherer;
 /// let iter = remapper.remap_iter(Box::new(image.pixels.iter().cloned()), image.width);
 /// let indexed_image_data: Vec<u8> = iter.collect();
 /// ```
-pub struct Remapper<'a, T: 'a + ColorSpace, D: 'a + Ditherer + ?Sized> {
+pub struct Remapper<'a, D: 'a + Ditherer + ?Sized> {
     map: ColorMap,
-    colorspace: &'a T,
     ditherer: &'a D,
 }
 
-impl<'a, T: ColorSpace, D: Ditherer + ?Sized> Remapper<'a, T, D> {
+impl<'a, D: Ditherer + ?Sized> Remapper<'a, D> {
     /// Create a new Remapper instance for the given palette, colorspace and ditherer.
-    pub fn new(palette: &[Color], colorspace: &'a T, ditherer: &'a D) -> Remapper<'a, T, D> {
+    pub fn new(palette: &[Color], ditherer: &'a D) -> Remapper<'a, D> {
         Remapper {
-            map: ColorMap::new(palette, colorspace),
-            colorspace: colorspace,
+            map: ColorMap::new(palette),
             ditherer: ditherer,
         }
     }
@@ -50,49 +48,47 @@ impl<'a, T: ColorSpace, D: Ditherer + ?Sized> Remapper<'a, T, D> {
     pub fn remap(&self, image: &[Color], width: usize) -> Vec<u8> {
         assert!(self.map.num_colors() <= 256);
         self.ditherer
-            .remap(Box::new(image.iter().map(|&c| self.colorspace.to_float(c))),
-                   width,
-                   &self.map,
-                   self.colorspace)
-            .map(|i| i as u8)
+            .remap(
+                Box::new(
+                    image
+                        .iter()
+                        .map(|&c| XyzColor::from(SrgbColor::from(c)).into()),
+                ),
+                width,
+                &self.map,
+            ).map(|i| i as u8)
             .collect()
     }
 
     /// Remap and dither a `&[Color]` to a `Vec<usize>`.
     pub fn remap_usize(&self, image: &[Color], width: usize) -> Vec<usize> {
         self.ditherer
-            .remap(Box::new(image.iter().map(|&c| self.colorspace.to_float(c))),
-                   width,
-                   &self.map,
-                   self.colorspace)
+            .remap(Box::new(image.iter().map(|&c| c.into())), width, &self.map)
             .collect()
     }
 
     /// Remap and dither a `Box<Iterator<Item = Color>>` to a `Box<Iterator<Item = u8>>`.
-    pub fn remap_iter<'b>(&'b self,
-                          image: Box<Iterator<Item = Color> + 'b>,
-                          width: usize)
-                          -> Box<Iterator<Item = u8> + 'b> {
+    pub fn remap_iter<'b>(
+        &'b self,
+        image: Box<Iterator<Item = Color> + 'b>,
+        width: usize,
+    ) -> Box<Iterator<Item = u8> + 'b> {
         assert!(self.map.num_colors() <= 256);
-        Box::new(self.ditherer
-            .remap(Box::new(image.map(move |c| self.colorspace.to_float(c))),
-                   width,
-                   &self.map,
-                   self.colorspace)
-            .map(|i| i as u8))
+        Box::new(
+            self.ditherer
+                .remap(Box::new(image.map(move |c| c.into())), width, &self.map)
+                .map(|i| i as u8),
+        )
     }
 
     /// Remap and dither a `Box<Iterator<Item = Color>>` to a `Box<Iterator<Item = usize>>`.
-    pub fn remap_iter_usize<'b>(&'b self,
-                                image: Box<Iterator<Item = Color> + 'b>,
-                                width: usize)
-                                -> Box<Iterator<Item = usize> + 'b> {
+    pub fn remap_iter_usize<'b>(
+        &'b self,
+        image: Box<Iterator<Item = Color> + 'b>,
+        width: usize,
+    ) -> Box<Iterator<Item = usize> + 'b> {
         assert!(self.map.num_colors() <= 256);
         self.ditherer
-            .remap(Box::new(image.map(move |c| self.colorspace.to_float(c))),
-                   width,
-                   &self.map,
-                   self.colorspace)
-
+            .remap(Box::new(image.map(move |c| c.into())), width, &self.map)
     }
 }

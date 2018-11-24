@@ -37,29 +37,28 @@ pub struct Histogram {
 /// used internally.
 #[derive(Clone)]
 pub struct ColorCount {
-    pub color: Colorf,
+    pub color: LabColor,
     pub count: usize,
 }
 
 impl Histogram {
     /// Returns a new, empty `Histogram`.
     pub fn new() -> Histogram {
-        Histogram { data: HashMap::new() }
+        Histogram {
+            data: HashMap::new(),
+        }
     }
 
     /// Converts the rgba8 `Histogram` to a Vec of `ColorCount` in quantization color space.
     ///
     /// Mostly used internally.
-    pub fn to_color_counts(&self, colorspace: &ColorSpace) -> Vec<ColorCount> {
+    pub fn to_color_counts(&self) -> Vec<ColorCount> {
         self.data
             .iter()
-            .map(|(color, count)| {
-                ColorCount {
-                    color: colorspace.to_float(*color),
-                    count: *count,
-                }
-            })
-            .collect()
+            .map(|(color, count)| ColorCount {
+                color: XyzColor::from(SrgbColor::from(*color)).into(),
+                count: *count,
+            }).collect()
     }
 
     /// Returns an iterator over the histogram data.
@@ -70,7 +69,8 @@ impl Histogram {
 
 impl Extend<Color> for Histogram {
     fn extend<T>(&mut self, iter: T)
-        where T: IntoIterator<Item = Color>
+    where
+        T: IntoIterator<Item = Color>,
     {
         for pixel in iter {
             let count = self.data.entry(pixel).or_insert(0);
@@ -81,7 +81,8 @@ impl Extend<Color> for Histogram {
 
 impl FromIterator<Color> for Histogram {
     fn from_iter<T>(iter: T) -> Self
-        where T: IntoIterator<Item = Color>
+    where
+        T: IntoIterator<Item = Color>,
     {
         let mut histogram = Histogram::new();
         histogram.extend(iter.into_iter());
@@ -95,9 +96,15 @@ mod tests {
 
     #[test]
     fn count_duplicates() {
-        let mut hist: Histogram =
-            [Color::new(10, 20, 30, 99), Color::new(0, 99, 0, 99)].iter().cloned().collect();
-        hist.extend([Color::new(20, 0, 40, 99), Color::new(0, 99, 0, 99)].iter().cloned());
+        let mut hist: Histogram = [Color::new(10, 20, 30, 99), Color::new(0, 99, 0, 99)]
+            .iter()
+            .cloned()
+            .collect();
+        hist.extend(
+            [Color::new(20, 0, 40, 99), Color::new(0, 99, 0, 99)]
+                .iter()
+                .cloned(),
+        );
         assert_eq!(*hist.data.get(&Color::new(0, 99, 0, 99)).unwrap(), 2usize);
     }
 }
