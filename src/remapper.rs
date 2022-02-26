@@ -70,9 +70,9 @@ impl<'a, T: ColorSpace, D: Ditherer + ?Sized> Remapper<'a, T, D> {
 
     /// Remap and dither a `Box<Iterator<Item = Color>>` to a `Box<Iterator<Item = u8>>`.
     pub fn remap_iter<'b>(&'b self,
-                          image: Box<Iterator<Item = Color> + 'b>,
+                          image: Box<dyn Iterator<Item = Color> + 'b>,
                           width: usize)
-                          -> Box<Iterator<Item = u8> + 'b> {
+                          -> Box<dyn Iterator<Item = u8> + 'b> {
         assert!(self.map.num_colors() <= 256);
         Box::new(self.ditherer
             .remap(Box::new(image.map(move |c| self.colorspace.to_float(c))),
@@ -84,9 +84,9 @@ impl<'a, T: ColorSpace, D: Ditherer + ?Sized> Remapper<'a, T, D> {
 
     /// Remap and dither a `Box<Iterator<Item = Color>>` to a `Box<Iterator<Item = usize>>`.
     pub fn remap_iter_usize<'b>(&'b self,
-                                image: Box<Iterator<Item = Color> + 'b>,
+                                image: Box<dyn Iterator<Item = Color> + 'b>,
                                 width: usize)
-                                -> Box<Iterator<Item = usize> + 'b> {
+                                -> Box<dyn Iterator<Item = usize> + 'b> {
         assert!(self.map.num_colors() <= 256);
         self.ditherer
             .remap(Box::new(image.map(move |c| self.colorspace.to_float(c))),

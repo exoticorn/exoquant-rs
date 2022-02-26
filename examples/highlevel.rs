@@ -5,7 +5,7 @@ mod png;
 use exoquant::*;
 use std::env;
 
-// usage: cargo run --release --demo highlevel <in.png> <out.png> <num_colors>
+// usage: cargo run --release --example highlevel <in.png> <out.png> <num_colors>
 fn main() {
     let mut args = env::args();
     args.next();

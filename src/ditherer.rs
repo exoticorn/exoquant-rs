@@ -10,11 +10,11 @@ pub trait Ditherer {
     /// Remaps an iterator of input pixel (float-)colors of an Image to an Iterator of palette
     /// indices.
     fn remap<'a>(&'a self,
-                 image: Box<Iterator<Item = Colorf> + 'a>,
+                 image: Box<dyn Iterator<Item = Colorf> + 'a>,
                  width: usize,
                  map: &'a ColorMap,
-                 colorspace: &'a ColorSpace)
-                 -> Box<Iterator<Item = usize> + 'a>;
+                 colorspace: &'a dyn ColorSpace)
+                 -> Box<dyn Iterator<Item = usize> + 'a>;
 }
 
 /// A Ditherer that simply remaps each pixel to the nearest palette index without any actual
@@ -22,11 +22,11 @@ pub trait Ditherer {
 pub struct None;
 impl Ditherer for None {
     fn remap<'a>(&'a self,
-                 image: Box<Iterator<Item = Colorf> + 'a>,
+                 image: Box<dyn Iterator<Item = Colorf> + 'a>,
                  _: usize,
                  map: &'a ColorMap,
-                 _: &'a ColorSpace)
-                 -> Box<Iterator<Item = usize> + 'a> {
+                 _: &'a dyn ColorSpace)
+                 -> Box<dyn Iterator<Item = usize> + 'a> {
         Box::new(image.map(move |c| map.find_nearest(c)))
     }
 }
@@ -43,11 +43,11 @@ pub struct Ordered;
 const DITHER_MATRIX: [f64; 4] = [-0.375, 0.125, 0.375, -0.125];
 impl Ditherer for Ordered {
     fn remap<'a>(&'a self,
-                 image: Box<Iterator<Item = Colorf> + 'a>,
+                 image: Box<dyn Iterator<Item = Colorf> + 'a>,
                  width: usize,
                  map: &'a ColorMap,
-                 _: &'a ColorSpace)
-                 -> Box<Iterator<Item = usize> + 'a> {
+                 _: &'a dyn ColorSpace)
+                 -> Box<dyn Iterator<Item = usize> + 'a> {
         Box::new(image.enumerate()
             .map(move |(i, color)| {
                 let x = i % width;
@@ -82,11 +82,11 @@ impl FloydSteinberg {
 }
 impl Ditherer for FloydSteinberg {
     fn remap<'a>(&'a self,
-                 image: Box<Iterator<Item = Colorf> + 'a>,
+                 image: Box<dyn Iterator<Item = Colorf> + 'a>,
                  width: usize,
                  map: &'a ColorMap,
-                 colorspace: &'a ColorSpace)
-                 -> Box<Iterator<Item = usize> + 'a> {
+                 colorspace: &'a dyn ColorSpace)
+                 -> Box<dyn Iterator<Item = usize> + 'a> {
         let mut errors: Vec<Colorf> = (0..width * 2).map(|_| Colorf::zero()).collect();
         Box::new(image.enumerate()
             .map(move |(i, c)| {

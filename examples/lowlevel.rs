@@ -6,7 +6,7 @@ use std::env;
 use exoquant::*;
 use exoquant::optimizer::Optimizer;
 
-// usage: cargo run --release --demo lowlevel <in.png> <out.png> <num_colors>
+// usage: cargo run --release --example lowlevel <in.png> <out.png> <num_colors>
 fn main() {
     let mut args = env::args();
     args.next();
