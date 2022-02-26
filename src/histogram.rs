@@ -50,7 +50,7 @@ impl Histogram {
     /// Converts the rgba8 `Histogram` to a Vec of `ColorCount` in quantization color space.
     ///
     /// Mostly used internally.
-    pub fn to_color_counts(&self, colorspace: &ColorSpace) -> Vec<ColorCount> {
+    pub fn to_color_counts(&self, colorspace: &dyn ColorSpace) -> Vec<ColorCount> {
         self.data
             .iter()
             .map(|(color, count)| {
@@ -63,7 +63,7 @@ impl Histogram {
     }
 
     /// Returns an iterator over the histogram data.
-    pub fn iter<'a>(&'a self) -> Box<Iterator<Item = (&Color, &usize)> + 'a> {
+    pub fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = (&Color, &usize)> + 'a> {
         Box::new(self.data.iter())
     }
 }

@@ -208,7 +208,7 @@ impl Quantizer {
     /// }
     /// let palette = quantizer.colors(&colorspace);
     /// ```
-    pub fn optimize(self, optimizer: &Optimizer, num_iterations: usize) -> Quantizer {
+    pub fn optimize(self, optimizer: &dyn Optimizer, num_iterations: usize) -> Quantizer {
         if optimizer.is_noop() {
             return self;
         }

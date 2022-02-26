@@ -24,7 +24,7 @@ pub trait Optimizer {
     ///   &histogram, 16);
     /// ```
     fn optimize_palette(&self,
-                        colorspace: &ColorSpace,
+                        colorspace: &dyn ColorSpace,
                         palette: &[Color],
                         histogram: &Histogram,
                         num_iterations: usize)
